@@ -1,365 +1,1363 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PulmoCT AI - Advanced HRCT Pattern & Cystic ILD Assistant</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        medical: { 50: '#f0fdf4', 100: '#dcfce7', 600: '#16a34a', 700: '#15803d', 900: '#14532d' }
-                    }
-                }
-            }
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1424">
+<title>PulmoCT AI – HRCT Pattern Assessment</title>
+
+<style>
+:root {
+  --bg: #0b1424;
+  --panel: #121f33;
+  --panel2: #172840;
+  --border: #263b55;
+  --text: #e8f0fa;
+  --muted: #9aadc4;
+  --teal: #38d6c0;
+  --blue: #65a9ff;
+  --amber: #ffc66d;
+  --red: #ff7777;
+  --green: #74dfa5;
+  --radius: 15px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 18px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+.container { max-width: 1180px; margin: auto; }
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 5px 0 22px;
+}
+.logo { width: 55px; height: 55px; flex-shrink: 0; }
+h1 { font-size: 25px; margin: 0; letter-spacing: -.5px; }
+.subtitle { color: var(--muted); font-size: 13px; margin-top: 3px; }
+h2 { font-size: 17px; margin: 0 0 14px; }
+h3 { font-size: 14px; margin: 16px 0 9px; color: var(--teal); }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 17px;
+  margin-bottom: 16px;
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 13px;
+}
+.section-heading .number {
+  background: #1d4050;
+  color: var(--teal);
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+label {
+  display: block;
+  color: #b8c9dc;
+  font-size: 12px;
+  margin: 0 0 5px;
+}
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 11px;
+  color: var(--text);
+  background: #0d192b;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--teal);
+}
+select { appearance: auto; }
+textarea { min-height: 75px; resize: vertical; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.field { min-width: 0; }
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #0d192b;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px;
+  min-height: 39px;
+  font-size: 12px;
+  color: #d5e1ee;
+}
+.check-item input {
+  accent-color: var(--teal);
+  margin: 2px 0 0;
+  flex-shrink: 0;
+}
+small, .muted { color: var(--muted); }
+
+/* HRCT image upload */
+.upload-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(240px, .75fr);
+  gap: 16px;
+  align-items: start;
+}
+.upload-zone {
+  min-height: 250px;
+  background: #0b192b;
+  border: 1.5px dashed #41627e;
+  border-radius: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.upload-zone:focus-within, .upload-zone:hover {
+  border-color: var(--teal);
+  background: #102238;
+}
+.upload-icon {
+  width: 44px;
+  height: 44px;
+  color: var(--teal);
+  margin-bottom: 9px;
+}
+.upload-zone strong { font-size: 14px; }
+.upload-zone p { color: var(--muted); font-size: 12px; margin: 5px 0 12px; }
+.upload-button {
+  display: inline-block;
+  padding: 9px 15px;
+  background: #174c50;
+  color: #dffff9;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+#hrctFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+.image-preview-wrap {
+  display: none;
+  width: 100%;
+}
+.image-preview-wrap.visible { display: block; }
+.image-preview {
+  display: block;
+  width: 100%;
+  max-height: 440px;
+  object-fit: contain;
+  background: #050b13;
+  border-radius: 10px;
+  border: 1px solid #344c65;
+}
+.image-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-top: 9px;
+  font-size: 11px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.image-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+.image-actions button {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.upload-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.image-side-note {
+  background: #102238;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 13px;
+  font-size: 12px;
+  color: #b9cadd;
+}
+.image-side-note strong { color: var(--teal); display: block; margin-bottom: 5px; }
+
+button {
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 15px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  color: #06141c;
+  background: var(--teal);
+}
+button.secondary { background: #263b55; color: var(--text); }
+button.danger { background: #542c38; color: #ffdce1; }
+button:active { transform: scale(.98); }
+.actions { display: flex; gap: 9px; flex-wrap: wrap; margin: 15px 0; }
+.result-card {
+  background: #0d192b;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px;
+  margin: 9px 0;
+}
+.result-card h3 { margin: 0 0 6px; color: var(--text); }
+.score {
+  float: right;
+  color: var(--teal);
+  font-weight: 700;
+}
+.tag {
+  display: inline-block;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #193b48;
+  color: #9cefe0;
+  font-size: 10px;
+  margin: 2px;
+}
+.warning {
+  border-left: 3px solid var(--amber);
+  background: #292416;
+  color: #f3d9a7;
+  padding: 11px 13px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+.result-empty { color: var(--muted); font-size: 13px; }
+.reference-item { padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.reference-item:last-child { border-bottom: 0; }
+footer { color: var(--muted); font-size: 11px; text-align: center; padding: 15px 5px; }
+
+@media (max-width: 760px) {
+  body { padding: 12px; }
+  h1 { font-size: 21px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .upload-layout { grid-template-columns: 1fr; }
+  .upload-zone { min-height: 210px; }
+}
+@media (max-width: 430px) {
+  .grid, .grid.two, .check-grid { grid-template-columns: 1fr; }
+  .panel { padding: 13px; }
+}
+@media print {
+  body { background: white; color: black; }
+  .panel, .result-card { background: white; border: 1px solid #aaa; color: black; }
+  button, .actions, .upload-zone, .image-actions { display: none !important; }
+  .muted, label, small { color: #333; }
+}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
-    <!-- Header -->
-    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <!-- Sleek Modern Vector Lung / Pulse Logo -->
-                <div class="bg-medical-600/20 p-2 rounded-xl border border-medical-600/30 text-medical-600 flex items-center justify-center">
-                    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                        <polyline points="2 12 7 12 9 8 13 16 15 12 22 12"></polyline>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        PulmoCT AI <span class="text-xs bg-medical-600/30 text-medical-400 px-2 py-0.5 rounded-full font-medium">ATS/ERS & Fishman Aligned</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">HRCT Pattern Recognition & Differential Diagnosis Assistant | WBUHS Resident Edition</p>
-                </div>
-            </div>
-            <button onclick="resetApp()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition">
-                Reset App
-            </button>
+
+<body>
+<div class="container">
+
+<header>
+  <svg class="logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="PulmoCT logo">
+    <path d="M49 15V43M51 15V43" stroke="#38d6c0" stroke-width="4" stroke-linecap="round"/>
+    <path d="M49 36C39 28 25 31 19 43C12 57 18 79 31 84C42 88 47 77 48 65V43" stroke="#38d6c0" stroke-width="4" stroke-linecap="round"/>
+    <path d="M51 36C61 28 75 31 81 43C88 57 82 79 69 84C58 88 53 77 52 65V43" stroke="#38d6c0" stroke-width="4" stroke-linecap="round"/>
+    <path d="M10 53H28L36 43L44 62L54 39L62 53H90" stroke="#65a9ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div>
+    <h1>PulmoCT AI</h1>
+    <div class="subtitle">HRCT pattern assessment • Cystic lung disease • ILD</div>
+  </div>
+</header>
+
+<!-- 1. HRCT IMAGE UPLOAD -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">1</span>
+    <h2>HRCT image viewer</h2>
+  </div>
+
+  <div class="upload-layout">
+    <div>
+      <label class="upload-zone" for="hrctFileInput" id="uploadZone">
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <path d="m21 15-5-5L5 21"/>
+          <path d="M12 3v5m-2.5-2.5L12 3l2.5 2.5"/>
+        </svg>
+        <strong>Select an HRCT image</strong>
+        <p>Choose a cropped CT slice or screenshot from your iPad Photos library</p>
+        <span class="upload-button">Choose image</span>
+        <input id="hrctFileInput" type="file" accept="image/*">
+      </label>
+
+      <div class="image-preview-wrap" id="imagePreviewWrap">
+        <img id="hrctPreview" class="image-preview" alt="Uploaded HRCT scan preview">
+        <div class="image-meta">
+          <span id="imageFileName">Image selected</span>
+          <span id="imageDimensions"></span>
         </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Left Column: Image Viewer & Clinical Selectors (7 Cols) -->
-        <div class="lg:col-span-7 space-y-6">
-            
-            <!-- HRCT Image Uploader / Viewer Section -->
-            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-md">
-                <h2 class="text-sm font-semibold text-medical-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    HRCT Scan / Screenshot Side-by-Side Viewer
-                </h2>
-                <div class="border-2 border-dashed border-slate-700 hover:border-medical-600 rounded-xl p-4 text-center cursor-pointer transition bg-slate-950/50" onclick="document.getElementById('hrctInput').click()">
-                    <input type="file" id="hrctInput" accept="image/*" class="hidden" onchange="loadHRCTImage(event)">
-                    <div id="uploadPlaceholder" class="py-6">
-                        <svg class="w-10 h-10 mx-auto text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        <p class="text-sm font-medium text-slate-300">Tap to upload or select cropped HRCT scan from iPad gallery</p>
-                        <p class="text-xs text-slate-500 mt-1">Compare visual findings instantly while selecting parameters below</p>
-                    </div>
-                    <div id="imagePreviewContainer" class="hidden relative">
-                        <img id="hrctPreview" class="max-h-64 mx-auto rounded-lg object-contain border border-slate-700" alt="HRCT Scan Preview">
-                        <button onclick="event.stopPropagation(); removeImage();" class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-md shadow hover:bg-red-700">Remove</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Clinical & Radiological Feature Selectors -->
-            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-md space-y-4">
-                <h2 class="text-sm font-semibold text-medical-400 uppercase tracking-wider">1. Clinical & Radiological Parameters</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Patient Demographics</label>
-                        <select id="selDemo" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-sm focus:border-medical-600 focus:ring-1 focus:ring-medical-600">
-                            <option value="none">Select Demographics / Clues</option>
-                            <option value="young_female">Young Female (Childbearing age)</option>
-                            <option value="smoker_young">Young Adult Smoker / Former smoker</option>
-                            <option value="middle_aged_rh">Middle-aged / Older Adult (Insidious)</option>
-                            <option value="connective_tissue">Known Connective Tissue Disease (RA/SSc)</option>
-                            <option value="organic_dust">History of Bird / Mold / Farmer Exposure</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Dominant HRCT Pattern</label>
-                        <select id="selPattern" onchange="togglePatternFields()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-sm focus:border-medical-600 focus:ring-1 focus:ring-medical-600">
-                            <option value="none">Select Dominant Pattern</option>
-                            <option value="cystic">Cystic Lung Disease / Lucencies</option>
-                            <option value="fibrotic_uip">Fibrotic ILD (UIP Pattern / IPF)</option>
-                            <option value="fibrotic_nsip">Fibrotic ILD (NSIP Pattern)</option>
-                            <option value="hp_pattern">Hypersensitivity Pneumonitis (HP)</option>
-                            <option value="consolidation_ggo">Ground-Glass Opacity & Consolidation</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Craniocaudal Distribution</label>
-                        <select id="selDist" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-sm focus:border-medical-600 focus:ring-1 focus:ring-medical-600">
-                            <option value="none">Select Distribution</option>
-                            <option value="upper">Upper Lobe Predominant</option>
-                            <option value="lower">Lower Lobe Predominant</option>
-                            <option value="diffuse">Diffuse / Random</option>
-                            <option value="peribronchovascular">Peribronchovascular / Central</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Dynamic Morphological Selectors -->
-                <div id="cysticMorphologyBox" class="hidden p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
-                    <h3 class="text-xs font-bold text-medical-400 uppercase">Cystic Lung Disease Sub-Features (Fishman / ATS Guidelines)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Cyst Morphology & Wall</label>
-                            <select id="selCystType" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
-                                <option value="none">Select Cyst Characteristics</option>
-                                <option value="lam_cysts">Numerous, thin-walled, round, uniform, diffuse</option>
-                                <option value="lch_cysts">Bizarre-shaped, thick-walled, upper lobe cavitary/cystic</option>
-                                <option value="bhd_cysts">Elliptical / lenticular cysts, lower/medial predominance</option>
-                                <option value="lip_cysts">Peribronchovascular thin-walled cysts + GGO</option>
-                                <option value="honeycombing">Subpleural clustered cystic airspaces (Honeycombing)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Associated Findings</label>
-                            <select id="selCystAssoc" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
-                                <option value="none">Select Associated Features</option>
-                                <option value="chylothorax">Chylothorax / Pneumothorax recurrence (LAM)</option>
-                                <option value="nodules_cavity">Centrilobular nodules progressing to cysts (LCH)</option>
-                                <option value="renal_skin">Renal tumors / Skin fibrofolliculomas (BHD)</option>
-                                <option value="trapped_air">Mosaic attenuation / Air trapping (HP/BHD)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Fibrotic ILD Morphological Selectors -->
-                <div id="fibroticMorphologyBox" class="hidden p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
-                    <h3 class="text-xs font-bold text-medical-400 uppercase">Fibrotic ILD & UIP/NSIP/HP Features</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Honeycombing</label>
-                            <select id="selHoneycombing" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
-                                <option value="none">Select</option>
-                                <option value="present">Present (Essential for definite UIP)</option>
-                                <option value="absent">Absent</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Traction Bronchiectasis</label>
-                            <select id="selTraction" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
-                                <option value="none">Select</option>
-                                <option value="marked">Marked / Extensive</option>
-                                <option value="mild">Mild or Absent</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Subpleural Sparing / GGO</label>
-                            <select id="selSparing" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
-                                <option value="none">Select</option>
-                                <option value="subpleural_sparing">Subpleural Sparing present (NSIP clue)</option>
-                                <option value="peribronchovascular_hp">Three-density pattern / Air trapping (HP)</option>
-                                <option>None</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <button onclick="calculateDifferential()" class="w-full bg-medical-600 hover:bg-medical-700 text-white font-semibold py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012-2m-6 9l2 2 4-4"></path></svg>
-                    Generate ATS/ERS Differential Diagnosis
-                </button>
-            </section>
+        <div class="image-actions">
+          <button type="button" class="secondary" id="changeImageBtn">Change image</button>
+          <button type="button" class="danger" id="removeImageBtn">Remove image</button>
         </div>
+      </div>
+    </div>
 
-        <!-- Right Column: Results & Clinical Pearls (5 Cols) -->
-        <div class="lg:col-span-5 space-y-6">
-            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-md flex flex-col h-full">
-                <h2 class="text-sm font-semibold text-medical-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    Ranked Differential Diagnosis & Fishman Pearls
-                </h2>
+    <aside class="image-side-note">
+      <strong>Use during HRCT review</strong>
+      Upload a cropped HRCT slice or screenshot, then inspect the image while selecting the corresponding morphological and distributional features below.
 
-                <div id="resultsOutput" class="space-y-4 flex-1">
-                    <div class="text-center py-16 text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                        <svg class="w-12 h-12 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a2 2 0 011.414.586l4.828 4.828A2 2 0 0120 11.414V19a2 2 0 01-2 2z"></path></svg>
-                        <p class="text-sm font-medium">Select clinical parameters and tap "Generate Differential"</p>
-                        <p class="text-xs text-slate-600 mt-1">Aligned with ATS/ERS guidelines and Fishman's Pulmonary Diseases</p>
-                    </div>
-                </div>
+      <p><strong>Supported files</strong></p>
+      JPEG, PNG, WebP and other image formats supported by your iPad browser.
 
-                <!-- Clinical Disclaimer -->
-                <div class="mt-6 p-3 bg-amber-950/30 border border-amber-800/40 rounded-xl text-xs text-amber-300/80">
-                    <span class="font-bold">Resident Clinical Note:</span> Educational tool for WBUHS postgraduate training. Final diagnosis requires multidisciplinary discussion (MDD) per ATS/ERS guidelines.
-                </div>
-            </section>
-        </div>
-    </main>
+      <p><strong>Privacy</strong></p>
+      The selected image is previewed locally in this browser session. This page does not upload it to a server.
 
-    <script>
-        function loadHRCTImage(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('hrctPreview').src = e.target.result;
-                    document.getElementById('uploadPlaceholder').classList.add('hidden');
-                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
-                }
-                reader.readAsDataURL(file);
-            }
-        }
+      <p><strong>Important</strong></p>
+      This is an image viewer only. It does not automatically detect cysts, nodules, emphysema or ILD patterns.
+    </aside>
+  </div>
+  <div class="upload-note">Tip: Select a single representative slice or screenshot for easier visual comparison while completing the checklist.</div>
+</section>
 
-        function removeImage() {
-            document.getElementById('hrctInput').value = '';
-            document.getElementById('imagePreviewContainer').classList.add('hidden');
-            document.getElementById('uploadPlaceholder').classList.remove('hidden');
-        }
+<!-- 2. CLINICAL PROFILE -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">2</span>
+    <h2>Clinical profile</h2>
+  </div>
 
-        function togglePatternFields() {
-            const pattern = document.getElementById('selPattern').value;
-            const cysticBox = document.getElementById('cysticMorphologyBox');
-            const fibroticBox = document.getElementById('fibroticMorphologyBox');
+  <div class="grid">
+    <div class="field">
+      <label for="age">Age (years)</label>
+      <input id="age" type="number" min="0" max="120" placeholder="e.g. 45">
+    </div>
+    <div class="field">
+      <label for="sex">Sex</label>
+      <select id="sex">
+        <option value="">Select</option>
+        <option>Female</option>
+        <option>Male</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="smoking">Smoking history</label>
+      <select id="smoking">
+        <option value="">Select</option>
+        <option>Never smoker</option>
+        <option>Current smoker</option>
+        <option>Former smoker</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="packyears">Pack-years</label>
+      <input id="packyears" type="number" min="0" step="0.5" placeholder="If applicable">
+    </div>
+    <div class="field">
+      <label for="ctd">Connective tissue disease</label>
+      <select id="ctd">
+        <option value="">Select</option>
+        <option>None known</option>
+        <option>Rheumatoid arthritis</option>
+        <option>Sjögren syndrome</option>
+        <option>Systemic sclerosis</option>
+        <option>Polymyositis / dermatomyositis</option>
+        <option>Mixed connective tissue disease</option>
+        <option>Other / suspected CTD</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="family">Family history of pneumothorax / cystic lung disease</label>
+      <select id="family">
+        <option value="">Select</option>
+        <option>No</option>
+        <option>Yes</option>
+        <option>Unknown</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="pneumothorax">Previous pneumothorax</label>
+      <select id="pneumothorax">
+        <option value="">Select</option>
+        <option>No</option>
+        <option>Unilateral</option>
+        <option>Bilateral</option>
+        <option>Recurrent</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="exposure">Relevant exposure</label>
+      <select id="exposure">
+        <option value="">Select</option>
+        <option>None identified</option>
+        <option>Bird / feather exposure</option>
+        <option>Mould / damp environment</option>
+        <option>Occupational dust</option>
+        <option>Biomass smoke</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="drug">Potential drug exposure</label>
+      <select id="drug">
+        <option value="">Select</option>
+        <option>None identified</option>
+        <option>Amiodarone</option>
+        <option>Methotrexate</option>
+        <option>Nitrofurantoin</option>
+        <option>Bleomycin</option>
+        <option>Immune checkpoint inhibitor</option>
+        <option>Other / uncertain</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="immunodeficiency">Immunodeficiency / HIV status</label>
+      <select id="immunodeficiency">
+        <option value="">Select</option>
+        <option>No known immunodeficiency</option>
+        <option>HIV</option>
+        <option>Primary immunodeficiency</option>
+        <option>Immunosuppression / transplant</option>
+        <option>Unknown</option>
+      </select>
+    </div>
+  </div>
+</section>
 
-            cysticBox.classList.add('hidden');
-            fibroticBox.classList.add('hidden');
+<!-- 3. HRCT MORPHOLOGY -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">3</span>
+    <h2>Dominant HRCT pattern</h2>
+  </div>
 
-            if (pattern === 'cystic') {
-                cysticBox.classList.remove('hidden');
-            } else if (pattern.startsWith('fibrotic') || pattern === 'hp_pattern') {
-                fibroticBox.classList.remove('hidden');
-            }
-        }
+  <div class="grid two">
+    <div class="field">
+      <label for="dominant">Predominant pattern</label>
+      <select id="dominant">
+        <option value="">Select predominant pattern</option>
+        <option value="cystic">Multiple pulmonary cysts</option>
+        <option value="nodular">Nodules / nodulocystic pattern</option>
+        <option value="reticular">Reticular / fibrotic pattern</option>
+        <option value="groundglass">Ground-glass opacity predominant</option>
+        <option value="consolidation">Consolidation predominant</option>
+        <option value="emphysema">Emphysema / bullous disease</option>
+        <option value="airway">Airway-centred / bronchiolocentric pattern</option>
+        <option value="mixed">Mixed pattern</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distribution">Craniocaudal distribution</label>
+      <select id="distribution">
+        <option value="">Select</option>
+        <option>Upper-lung predominant</option>
+        <option>Mid-lung predominant</option>
+        <option>Lower-lung predominant</option>
+        <option>Diffuse</option>
+        <option>Random / variable</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="axial">Axial distribution</label>
+      <select id="axial">
+        <option value="">Select</option>
+        <option>Central / peribronchovascular</option>
+        <option>Peripheral / subpleural</option>
+        <option>Perilymphatic</option>
+        <option>Random</option>
+        <option>Diffuse</option>
+        <option>Basal medial</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="cystNumber">Cyst burden</label>
+      <select id="cystNumber">
+        <option value="">Select</option>
+        <option>Few</option>
+        <option>Multiple</option>
+        <option>Numerous / diffuse</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="cystShape">Cyst morphology</label>
+      <select id="cystShape">
+        <option value="">Select</option>
+        <option>Round / regular</option>
+        <option>Irregular / bizarre</option>
+        <option>Lentiform</option>
+        <option>Variable shapes</option>
+        <option>Clustered cysts</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="cystWall">Cyst wall</label>
+      <select id="cystWall">
+        <option value="">Select</option>
+        <option>Thin-walled</option>
+        <option>Thick-walled</option>
+        <option>Variable wall thickness</option>
+        <option>Indistinct / difficult to assess</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="cystSize">Cyst size</label>
+      <select id="cystSize">
+        <option value="">Select</option>
+        <option>Small</option>
+        <option>Variable</option>
+        <option>Large</option>
+        <option>Mixed small and large</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="cpa">Costophrenic angle involvement</label>
+      <select id="cpa">
+        <option value="">Select</option>
+        <option>Sparing</option>
+        <option>Involved</option>
+        <option>Indeterminate</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="honeycomb">Honeycombing</label>
+      <select id="honeycomb">
+        <option value="">Select</option>
+        <option>Absent</option>
+        <option>Present</option>
+        <option>Indeterminate</option>
+      </select>
+    </div>
+  </div>
 
-        function calculateDifferential() {
-            const demo = document.getElementById('selDemo').value;
-            const pattern = document.getElementById('selPattern').value;
-            const dist = document.getElementById('selDist').value;
-            const cystType = document.getElementById('selCystType').value;
-            const honeycombing = document.getElementById('selHoneycombing').value;
-            const sparing = document.getElementById('selSparing').value;
+  <h3>Associated HRCT features</h3>
+  <div class="check-grid">
+    <label class="check-item"><input type="checkbox" value="Centrilobular nodules" class="feature"> Centrilobular nodules</label>
+    <label class="check-item"><input type="checkbox" value="Perilymphatic nodules" class="feature"> Perilymphatic nodules</label>
+    <label class="check-item"><input type="checkbox" value="Cavitating nodules" class="feature"> Cavitating nodules</label>
+    <label class="check-item"><input type="checkbox" value="Ground-glass opacity" class="feature"> Ground-glass opacity</label>
+    <label class="check-item"><input type="checkbox" value="Reticulation" class="feature"> Reticulation</label>
+    <label class="check-item"><input type="checkbox" value="Traction bronchiectasis" class="feature"> Traction bronchiectasis</label>
+    <label class="check-item"><input type="checkbox" value="Bronchial wall thickening" class="feature"> Bronchial wall thickening</label>
+    <label class="check-item"><input type="checkbox" value="Air trapping / mosaic attenuation" class="feature"> Air trapping / mosaic attenuation</label>
+    <label class="check-item"><input type="checkbox" value="Emphysema" class="feature"> Emphysema</label>
+    <label class="check-item"><input type="checkbox" value="Bullae" class="feature"> Bullae</label>
+    <label class="check-item"><input type="checkbox" value="Architectural distortion" class="feature"> Architectural distortion</label>
+    <label class="check-item"><input type="checkbox" value="Volume loss" class="feature"> Volume loss</label>
+    <label class="check-item"><input type="checkbox" value="Pleural thickening" class="feature"> Pleural thickening</label>
+    <label class="check-item"><input type="checkbox" value="Upper-lobe fibrosis" class="feature"> Upper-lobe fibrosis</label>
+    <label class="check-item"><input type="checkbox" value="Subpleural sparing" class="feature"> Subpleural sparing</label>
+    <label class="check-item"><input type="checkbox" value="Crazy paving" class="feature"> Crazy paving</label>
+    <label class="check-item"><input type="checkbox" value="Consolidation" class="feature"> Consolidation</label>
+    <label class="check-item"><input type="checkbox" value="Mediastinal lymphadenopathy" class="feature"> Mediastinal lymphadenopathy</label>
+    <label class="check-item"><input type="checkbox" value="Pleural effusion" class="feature"> Pleural effusion</label>
+    <label class="check-item"><input type="checkbox" value="Pulmonary artery enlargement" class="feature"> Pulmonary artery enlargement</label>
+  </div>
+</section>
 
-            let html = '';
+<!-- 4. CYSTIC LUNG DISEASE -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">4</span>
+    <h2>Cystic lung disease assessment</h2>
+  </div>
 
-            if (pattern === 'none') {
-                alert('Please select a dominant HRCT pattern.');
-                return;
-            }
+  <div class="grid two">
+    <div class="field">
+      <label for="cysts">Are true pulmonary cysts present?</label>
+      <select id="cysts">
+        <option value="">Select</option>
+        <option>Yes</option>
+        <option>No</option>
+        <option>Uncertain</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="vessels">Internal vessels / structures within lucencies</label>
+      <select id="vessels">
+        <option value="">Select</option>
+        <option>Absent</option>
+        <option>Present</option>
+        <option>Uncertain</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="costal">Basal / medial cyst predominance</label>
+      <select id="costal">
+        <option value="">Select</option>
+        <option>Yes</option>
+        <option>No</option>
+        <option>Uncertain</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="nodules">Nodules associated with cysts</label>
+      <select id="nodules">
+        <option value="">Select</option>
+        <option>Absent</option>
+        <option>Present</option>
+        <option>Uncertain</option>
+      </select>
+    </div>
+  </div>
 
-            // Diagnostic logic matching Fishman & ATS/ERS guidelines
-            if (pattern === 'cystic') {
-                if (demo === 'young_female' || cystType === 'lam_cysts') {
-                    html += createResultCard(
-                        '1. Lymphangioleiomyomatosis (LAM)',
-                        'High Probability (95%)',
-                        'Diffuse, thin-walled, round, uniform cysts surrounded by normal lung parenchyma.',
-                        'Associated with tuberous sclerosis complex (TSC gene mutations), VEGF-D biomarker elevated (>800 pg/ml). Chylothorax common.'
-                    );
-                }
-                if (demo === 'smoker_young' || cystType === 'lch_cysts') {
-                    html += createResultCard(
-                        '2. Pulmonary Langerhans Cell Histiocytosis (PLCH)',
-                        'High Probability (90%)',
-                        'Upper and mid-lung predominant bizarre-shaped cysts, nodules, and cavitary nodules with costophrenic sparing.',
-                        'Strongly associated with cigarette smoking in young adults. Biopsy shows CD1a+ Langerhans cells.'
-                    );
-                }
-                if (cystType === 'bhd_cysts') {
-                    html += createResultCard(
-                        '3. Birt-Hogg-Dubé (BHD) Syndrome',
-                        'High Probability (85%)',
-                        'Multiple thin-walled cysts with lenticular or elliptical shape, predominantly basilar and medial/perivascular.',
-                        'Autosomal dominant (FLCN gene). Look for renal cell carcinoma history and skin fibrofolliculomas.'
-                    );
-                }
-                if (cystType === 'lip_cysts' || demo === 'connective_tissue') {
-                    html += createResultCard(
-                        '4. Lymphoid Interstitial Pneumonia (LIP) / Sjogren Associated',
-                        'Moderate Probability (75%)',
-                        'Peribronchovascular distribution of thin-walled cysts accompanied by ground-glass opacities and centrilobular nodules.',
-                        'Strongly linked to Sjogren syndrome, autoimmune disorders, and HIV in adults.'
-                    );
-                }
-                if (honeycombing === 'present') {
-                    html += createResultCard(
-                        '5. End-stage Fibrotic ILD with Honeycombing (Pseudocysts)',
-                        'Moderate Probability (70%)',
-                        'Clustered subpleural cystic airspaces representing destroyed lung architecture (honeycomb changes) rather than primary cystic disease.',
-                        'Differentiate from primary cystic diseases by traction bronchiectasis, subpleural distribution, and lower lobe predominance.'
-                    );
-                }
-            } else if (pattern === 'fibrotic_uip' || honeycombing === 'present') {
-                html += createResultCard(
-                    '1. Idiopathic Pulmonary Fibrosis (IPF) / UIP Pattern',
-                    'High Probability (92%)',
-                    'Subpleural, basal predominant fibrotic pattern with definite honeycombing and traction bronchiectasis.',
-                    'ATS/ERS Guidelines: Definite UIP pattern on HRCT obviates surgical lung biopsy in appropriate clinical context after multidisciplinary discussion.'
-                );
-                html += createResultCard(
-                    '2. Chronic Hypersensitivity Pneumonitis (Fibrotic HP)',
-                    'Moderate Probability (80%)',
-                    'Upper/mid lung predominant fibrosis with mosaic attenuation, air trapping, and centrilobular nodules.',
-                    'Thorough environmental and occupational exposure history is critical. Three-density pattern on HRCT.'
-                );
-            } else if (pattern === 'fibrotic_nsip' || sparing === 'subpleural_sparing') {
-                html += createResultCard(
-                    '1. Non-Specific Interstitial Pneumonia (NSIP)',
-                    'High Probability (88%)',
-                    'Basal predominant ground-glass opacities and reticular changes with characteristic subpleural sparing.',
-                    'Frequently associated with connective tissue diseases (Scleroderma, RA, PM/DM). Favorable response to corticosteroids compared to IPF.'
-                );
-            } else if (pattern === 'hp_pattern' || sparing === 'peribronchovascular_hp') {
-                html += createResultCard(
-                    '1. Hypersensitivity Pneumonitis (HP) - ATS/JRS/ALAT Guidelines',
-                    'High Probability (90%)',
-                    'Exposure-induced granulomatous pneumonitis presenting with centrilobular nodules, mosaic attenuation, and expiratory air trapping.',
-                    'Classified into Fibrotic vs. Non-Fibrotic HP. Antigen identification and avoidance halt disease progression.'
-                );
-            } else {
-                html += createResultCard(
-                    'General Diffuse Parenchymal Lung Disease Evaluation',
-                    'Pending Further Refinement',
-                    'Select specific morphological features like cyst morphology, distribution, or fibrotic signs to narrow differential diagnosis.',
-                    'Review Fishman Chapter on Interstitial Lung Disease for algorithmic approach.'
-                );
-            }
+  <h3>Clinical clues</h3>
+  <div class="check-grid">
+    <label class="check-item"><input type="checkbox" id="renalTumour"> Renal angiomyolipoma / renal lesions</label>
+    <label class="check-item"><input type="checkbox" id="skinLesions"> Facial angiofibromas / skin lesions</label>
+    <label class="check-item"><input type="checkbox" id="sjogren"> Sjögren syndrome features</label>
+    <label class="check-item"><input type="checkbox" id="monoclonal"> Monoclonal gammopathy / amyloid suspicion</label>
+    <label class="check-item"><input type="checkbox" id="lungCancer"> Lung cancer / smoking-related history</label>
+    <label class="check-item"><input type="checkbox" id="recurrentPtx"> Recurrent spontaneous pneumothorax</label>
+  </div>
+</section>
 
-            document.getElementById('resultsOutput').innerHTML = html;
-        }
+<!-- 5. ILD PATTERN -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">5</span>
+    <h2>Interstitial lung disease pattern assessment</h2>
+  </div>
 
-        function createResultCard(title, prob, findings, pearl) {
-            let badgeColor = prob.includes('9') ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-            return `
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-sm font-bold text-white">${title}</h3>
-                        <span class="text-xs px-2 py-0.5 rounded-full border ${badgeColor} font-medium">${prob}</span>
-                    </div>
-                    <p class="text-xs text-slate-300"><span class="text-medical-400 font-semibold">HRCT Findings:</span> ${findings}</p>
-                    <p class="text-xs text-slate-400 bg-slate-900/80 p-2 rounded-lg border border-slate-800/60"><span class="text-amber-400 font-semibold">Clinical Pearl:</span> ${pearl}</p>
-                </div>
-            `;
-        }
+  <div class="grid two">
+    <div class="field">
+      <label for="ildPattern">Most likely morphological pattern</label>
+      <select id="ildPattern">
+        <option value="">Select pattern</option>
+        <option value="UIP">UIP pattern</option>
+        <option value="NSIP">NSIP pattern</option>
+        <option value="OP">Organising pneumonia pattern</option>
+        <option value="HP">Hypersensitivity pneumonitis pattern</option>
+        <option value="DAD">Diffuse alveolar damage pattern</option>
+        <option value="PPFE">Pleuroparenchymal fibroelastosis pattern</option>
+        <option value="LIP">Lymphocytic interstitial pneumonia pattern</option>
+        <option value="RBILD">Respiratory bronchiolitis-associated ILD</option>
+        <option value="DIP">Desquamative interstitial pneumonia pattern</option>
+        <option value="Unclassifiable">Unclassifiable / mixed pattern</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="uipDistribution">Fibrosis distribution</label>
+      <select id="uipDistribution">
+        <option value="">Select</option>
+        <option>Basal and subpleural</option>
+        <option>Upper-lobe predominant</option>
+        <option>Peribronchovascular</option>
+        <option>Diffuse</option>
+        <option>Mixed / atypical</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="traction">Traction bronchiectasis / bronchiolectasis</label>
+      <select id="traction">
+        <option value="">Select</option>
+        <option>Absent</option>
+        <option>Present</option>
+        <option>Indeterminate</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="subpleural">Subpleural sparing</label>
+      <select id="subpleural">
+        <option value="">Select</option>
+        <option>Absent</option>
+        <option>Present</option>
+        <option>Indeterminate</option>
+      </select>
+    </div>
+  </div>
 
-        function resetApp() {
-            document.getElementById('selDemo').selectedIndex = 0;
-            document.getElementById('selPattern').selectedIndex = 0;
-            document.getElementById('selDist').selectedIndex = 0;
-            document.getElementById('selCystType').selectedIndex = 0;
-            document.getElementById('selCystAssoc').selectedIndex = 0;
-            document.getElementById('selHoneycombing').selectedIndex = 0;
-            document.getElementById('selTraction').selectedIndex = 0;
-            document.getElementById('selSparing').selectedIndex = 0;
-            removeImage();
-            togglePatternFields();
-            document.getElementById('resultsOutput').innerHTML = `
-                <div class="text-center py-16 text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                    <svg class="w-12 h-12 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a2 2 0 011.414.586l4.828 4.828A2 2 0 0120 11.414V19a2 2 0 01-2 2z"></path></svg>
-                    <p class="text-sm font-medium">Select clinical parameters and tap "Generate Differential"</p>
-                    <p class="text-xs text-slate-600 mt-1">Aligned with ATS/ERS guidelines and Fishman's Pulmonary Diseases</p>
-                </div>
-            `;
-        }
-    </script>
+  <h3>UIP pattern checklist</h3>
+  <div class="check-grid">
+    <label class="check-item"><input type="checkbox" id="uipBasal"> Basal predominant fibrosis</label>
+    <label class="check-item"><input type="checkbox" id="uipSubpleural"> Subpleural predominant fibrosis</label>
+    <label class="check-item"><input type="checkbox" id="uipHoney"> Honeycombing</label>
+    <label class="check-item"><input type="checkbox" id="uipTraction"> Traction bronchiectasis</label>
+    <label class="check-item"><input type="checkbox" id="uipReticulation"> Reticular abnormality</label>
+    <label class="check-item"><input type="checkbox" id="uipNoAlternative"> No obvious alternative CT pattern</label>
+  </div>
+</section>
+
+<!-- 6. PROGRESSIVE PULMONARY FIBROSIS -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">6</span>
+    <h2>Progressive pulmonary fibrosis (PPF) assessment</h2>
+  </div>
+  <p class="muted" style="font-size:12px;margin-top:0">
+    Assess progression over the preceding 1 year in an ILD other than IPF, with no alternative explanation.
+  </p>
+
+  <h3>Clinical progression</h3>
+  <div class="check-grid">
+    <label class="check-item"><input type="checkbox" id="ppfSymptoms"> Worsening respiratory symptoms</label>
+  </div>
+
+  <h3>Physiological progression</h3>
+  <div class="check-grid">
+    <label class="check-item"><input type="checkbox" id="ppfFVC"> Absolute FVC decline ≥5 percentage points predicted</label>
+    <label class="check-item"><input type="checkbox" id="ppfDLCO"> Absolute DLCO decline ≥10 percentage points predicted (Hb-corrected)</label>
+  </div>
+
+  <h3>Radiological progression</h3>
+  <div class="check-grid">
+    <label class="check-item"><input type="checkbox" id="ppfTraction"> Increased traction bronchiectasis / bronchiolectasis</label>
+    <label class="check-item"><input type="checkbox" id="ppfReticulation"> Increased reticular abnormality</label>
+    <label class="check-item"><input type="checkbox" id="ppfHoney"> New or increased honeycombing</label>
+    <label class="check-item"><input type="checkbox" id="ppfVolume"> Increased lobar volume loss</label>
+    <label class="check-item"><input type="checkbox" id="ppfGGO"> New ground-glass opacity with traction bronchiectasis</label>
+  </div>
+
+  <div class="field" style="margin-top:12px">
+    <label for="alternative">Alternative explanation for deterioration excluded?</label>
+    <select id="alternative">
+      <option value="">Select</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+      <option value="uncertain">Uncertain</option>
+    </select>
+  </div>
+  <div id="ppfResult" class="result-card" aria-live="polite">
+    <p class="result-empty">Complete the PPF checklist and select whether alternative explanations have been excluded.</p>
+  </div>
+</section>
+
+<!-- 7. DIFFERENTIAL DIAGNOSIS -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">7</span>
+    <h2>Differential diagnosis</h2>
+  </div>
+  <p class="muted" style="font-size:12px;margin-top:0">
+    The following rule-based ranking is an educational checklist aid. It is not a validated diagnostic probability or machine-learning prediction.
+  </p>
+  <div class="actions">
+    <button type="button" id="analyseBtn">Generate differential</button>
+    <button type="button" class="secondary" id="clearResultsBtn">Clear results</button>
+  </div>
+  <div id="results" aria-live="polite">
+    <p class="result-empty">Select relevant clinical and HRCT features, then generate the differential.</p>
+  </div>
+</section>
+
+<!-- 8. QUICK REFERENCE -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">8</span>
+    <h2>Quick reference library</h2>
+  </div>
+
+  <div class="reference-item">
+    <strong>LAM:</strong> Diffuse, relatively uniform, round, thin-walled cysts; often involve the costophrenic angles. Consider in women of reproductive age, recurrent pneumothorax and renal angiomyolipoma. Serum VEGF-D ≥800 pg/mL can support diagnosis in an appropriate clinical and radiological context.
+  </div>
+  <div class="reference-item">
+    <strong>PLCH:</strong> Usually associated with cigarette smoking. Upper- and mid-lung predominant nodules, cavitating nodules and irregular or bizarre-shaped cysts; relative sparing of costophrenic angles is characteristic.
+  </div>
+  <div class="reference-item">
+    <strong>Birt–Hogg–Dubé syndrome:</strong> Multiple variable-sized, irregular or lentiform cysts, often lower-lung, basal, medial and subpleural; consider recurrent pneumothorax, family history and fibrofolliculomas.
+  </div>
+  <div class="reference-item">
+    <strong>LIP:</strong> Associated with Sjögren syndrome and other autoimmune disorders. May show thin-walled cysts with ground-glass opacity, centrilobular nodules and septal thickening.
+  </div>
+  <div class="reference-item">
+    <strong>Light-chain deposition disease / amyloidosis:</strong> Consider cysts with nodules, calcified nodules or monoclonal gammopathy; histopathological confirmation may be required.
+  </div>
+  <div class="reference-item">
+    <strong>UIP:</strong> Basal and subpleural predominant reticulation, traction bronchiectasis and honeycombing. Classification requires the complete HRCT pattern and clinical context.
+  </div>
+  <div class="reference-item">
+    <strong>NSIP:</strong> Often shows bilateral, relatively symmetric ground-glass opacity and fine reticulation with lower-zone predominance; subpleural sparing may be seen.
+  </div>
+  <div class="reference-item">
+    <strong>Fibrotic HP:</strong> Consider exposure history, airway-centred fibrosis, mosaic attenuation, air trapping and the three-density pattern.
+  </div>
+  <div class="reference-item">
+    <strong>PPFE:</strong> Upper-lobe pleural thickening and subpleural fibrosis, often with upper-lobe volume loss and architectural distortion.
+  </div>
+  <div class="reference-item">
+    <strong>Emphysema versus cysts:</strong> Emphysema generally has no clearly definable wall and may show central vessels within lucencies. True cysts have a definable wall and are surrounded by relatively normal lung.
+  </div>
+  <div class="reference-item">
+    <strong>Honeycombing:</strong> Stacked subpleural cystic airspaces, usually in multiple layers, in a fibrotic lung. Do not label isolated emphysematous spaces or traction bronchiolectasis as honeycombing without appropriate context.
+  </div>
+</section>
+
+<!-- 9. REPORT -->
+<section class="panel">
+  <div class="section-heading">
+    <span class="number">9</span>
+    <h2>Assessment summary</h2>
+  </div>
+  <div id="report" class="result-card">
+    <p class="result-empty">Generate a differential to prepare the assessment summary.</p>
+  </div>
+  <div class="actions">
+    <button type="button" id="copyBtn">Copy assessment</button>
+    <button type="button" class="secondary" id="printBtn">Print / Save PDF</button>
+    <button type="button" class="danger" id="resetBtn">Reset all fields</button>
+  </div>
+</section>
+
+<div class="warning">
+  <strong>Clinical disclaimer:</strong> PulmoCT AI is an educational, manually completed pattern-assessment aid. It does not interpret DICOM images, detect abnormalities automatically, establish a diagnosis or replace radiologist review, multidisciplinary discussion, pulmonary function testing, laboratory evaluation or histopathology where indicated. Its differential scoring is heuristic and has not been clinically validated. Always interpret findings in the full clinical context.
+</div>
+
+<footer>
+  PulmoCT AI • Single-file educational application • No image upload to an external server
+</footer>
+
+</div>
+
+<script>
+/* =========================================================
+   HRCT IMAGE UPLOAD AND PREVIEW
+   Uses FileReader to preview images locally in the browser.
+   ========================================================= */
+
+const fileInput = document.getElementById("hrctFileInput");
+const preview = document.getElementById("hrctPreview");
+const previewWrap = document.getElementById("imagePreviewWrap");
+const uploadZone = document.getElementById("uploadZone");
+const fileNameLabel = document.getElementById("imageFileName");
+const dimensionsLabel = document.getElementById("imageDimensions");
+const changeImageBtn = document.getElementById("changeImageBtn");
+const removeImageBtn = document.getElementById("removeImageBtn");
+
+let currentImageData = null;
+
+function formatFileSize(bytes) {
+  if (bytes < 1024 * 1024) {
+    return (bytes / 1024).toFixed(1) + " KB";
+  }
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+function clearUploadedImage() {
+  currentImageData = null;
+  fileInput.value = "";
+  preview.removeAttribute("src");
+  previewWrap.classList.remove("visible");
+  uploadZone.style.display = "flex";
+  fileNameLabel.textContent = "";
+  dimensionsLabel.textContent = "";
+}
+
+fileInput.addEventListener("change", function(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    alert("Please select a valid image file.");
+    fileInput.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(loadEvent) {
+    const imageData = loadEvent.target.result;
+
+    if (typeof imageData !== "string") {
+      alert("Unable to read this image. Please try another file.");
+      return;
+    }
+
+    currentImageData = imageData;
+    preview.src = imageData;
+    fileNameLabel.textContent = file.name + " • " + formatFileSize(file.size);
+    uploadZone.style.display = "none";
+    previewWrap.classList.add("visible");
+
+    preview.onload = function() {
+      dimensionsLabel.textContent =
+        preview.naturalWidth + " × " + preview.naturalHeight + " px";
+    };
+
+    preview.onerror = function() {
+      alert("The selected image could not be displayed.");
+      clearUploadedImage();
+    };
+  };
+
+  reader.onerror = function() {
+    alert("There was an error reading the selected image.");
+    clearUploadedImage();
+  };
+
+  reader.readAsDataURL(file);
+});
+
+changeImageBtn.addEventListener("click", function() {
+  fileInput.click();
+});
+
+removeImageBtn.addEventListener("click", function() {
+  clearUploadedImage();
+});
+
+uploadZone.addEventListener("keydown", function(event) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    fileInput.click();
+  }
+});
+
+/* =========================================================
+   GENERAL HELPERS
+   ========================================================= */
+
+function valueOf(id) {
+  const element = document.getElementById(id);
+  return element ? element.value : "";
+}
+
+function checked(id) {
+  const element = document.getElementById(id);
+  return !!(element && element.checked);
+}
+
+function selectedFeatures() {
+  return Array.from(document.querySelectorAll(".feature:checked"))
+    .map(item => item.value);
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function hasFeature(name) {
+  return selectedFeatures().includes(name);
+}
+
+/* =========================================================
+   PPF ASSESSMENT
+   2022 ATS/ERS/JRS/ALAT framework:
+   At least 2 of 3 domains within the preceding year,
+   with no alternative explanation.
+   ========================================================= */
+
+function assessPPF() {
+  const clinical = checked("ppfSymptoms");
+
+  const physiological =
+    checked("ppfFVC") || checked("ppfDLCO");
+
+  const radiological = [
+    "ppfTraction",
+    "ppfReticulation",
+    "ppfHoney",
+    "ppfVolume",
+    "ppfGGO"
+  ].some(checked);
+
+  const domains = [clinical, physiological, radiological]
+    .filter(Boolean).length;
+
+  const alternative = valueOf("alternative");
+  const result = document.getElementById("ppfResult");
+
+  let message = "";
+  let className = "result-card";
+
+  if (!alternative || alternative === "uncertain") {
+    message = "PPF assessment incomplete: clarify whether alternative explanations for deterioration have been excluded.";
+  } else if (alternative === "no") {
+    message = "PPF criteria cannot be confidently applied because alternative explanations have not been excluded.";
+  } else if (domains >= 2) {
+    message = "The selected findings meet the checklist threshold for PPF: at least two of the three clinical, physiological and radiological domains are present. Confirm that progression occurred within 1 year and that there is no alternative explanation.";
+    className += " ppf-positive";
+  } else {
+    message = "The selected findings do not currently meet the checklist threshold for PPF. Reassess the clinical, physiological and radiological domains over the relevant 1-year period.";
+  }
+
+  result.className = className;
+  result.innerHTML =
+    "<strong>PPF checklist result</strong><p>" +
+    escapeHTML(message) +
+    "</p><small>Domains positive: " + domains + " / 3</small>";
+}
+
+document.querySelectorAll(
+  "#ppfSymptoms,#ppfFVC,#ppfDLCO,#ppfTraction,#ppfReticulation,#ppfHoney,#ppfVolume,#ppfGGO,#alternative"
+).forEach(element => {
+  element.addEventListener("change", assessPPF);
+});
+
+/* =========================================================
+   RULE-BASED DIFFERENTIAL SCORING
+   Scores are heuristic feature matches, NOT probabilities.
+   ========================================================= */
+
+function generateDifferential() {
+  const scores = {};
+
+  function add(name, points, reasons) {
+    if (!scores[name]) scores[name] = { score: 0, reasons: [] };
+    scores[name].score += points;
+    if (reasons) scores[name].reasons.push(reasons);
+  }
+
+  const age = Number(valueOf("age"));
+  const sex = valueOf("sex");
+  const smoking = valueOf("smoking");
+  const dominant = valueOf("dominant");
+  const distribution = valueOf("distribution");
+  const axial = valueOf("axial");
+  const cystShape = valueOf("cystShape");
+  const cystWall = valueOf("cystWall");
+  const cystSize = valueOf("cystSize");
+  const cpa = valueOf("cpa");
+  const honeycomb = valueOf("honeycomb");
+  const cysts = valueOf("cysts");
+  const ctd = valueOf("ctd");
+  const family = valueOf("family");
+  const ptx = valueOf("pneumothorax");
+  const exposure = valueOf("exposure");
+  const ildPattern = valueOf("ildPattern");
+
+  const trueCysts = cysts === "Yes" || dominant === "cystic";
+  const upper = distribution === "Upper-lung predominant";
+  const lower = distribution === "Lower-lung predominant";
+  const diffuse = distribution === "Diffuse";
+  const basalMedial = axial === "Basal medial";
+  const subpleural = axial === "Peripheral / subpleural";
+  const perilymphatic = axial === "Perilymphatic";
+  const nodules = valueOf("nodules") === "Present" ||
+    hasFeature("Centrilobular nodules") ||
+    hasFeature("Perilymphatic nodules") ||
+    hasFeature("Cavitating nodules");
+
+  /* Cystic lung disease differentials */
+
+  if (trueCysts) {
+    add("LAM", 2, "True pulmonary cysts");
+    add("PLCH", 1, "Cystic lung disease pattern");
+    add("Birt–Hogg–Dubé syndrome", 1, "Cystic lung disease pattern");
+    add("LIP", 1, "Cystic lung disease pattern");
+    add("Amyloidosis / light-chain deposition disease", 1, "Cystic lung disease pattern");
+  }
+
+  if (sex === "Female") add("LAM", 2, "Female patient");
+  if (age >= 18 && age <= 50) add("LAM", 1, "Age compatible with typical LAM presentation");
+  if (diffuse && cysts === "Yes") add("LAM", 2, "Diffuse cystic involvement");
+  if (cystShape === "Round / regular") add("LAM", 2, "Round, relatively regular cyst morphology");
+  if (cystWall === "Thin-walled") add("LAM", 1, "Thin-walled cysts");
+  if (cpa === "Involved") add("LAM", 1, "Costophrenic angle involvement");
+  if (checked("renalTumour")) add("LAM", 4, "Renal angiomyolipoma / renal lesion");
+  if (ptx === "Bilateral" || ptx === "Recurrent") add("LAM", 2, "Bilateral or recurrent pneumothorax");
+
+  if (smoking === "Current smoker" || smoking === "Former smoker") {
+    add("PLCH", 3, "Smoking history");
+  }
+  if (upper && cysts === "Yes") add("PLCH", 3, "Upper-lung predominant cysts");
+  if (cystShape === "Irregular / bizarre") add("PLCH", 3, "Bizarre-shaped cysts");
+  if (cpa === "Sparing") add("PLCH", 2, "Relative costophrenic angle sparing");
+  if (nodules) add("PLCH", 2, "Associated pulmonary nodules");
+  if (valueOf("nodules") === "Present") add("PLCH", 1, "Nodules accompanying cysts");
+
+  if (basalMedial && cysts === "Yes") add("Birt–Hogg–Dubé syndrome", 4, "Basal medial cyst distribution");
+  if (lower && cysts === "Yes") add("Birt–Hogg–Dubé syndrome", 2, "Lower-lung predominant cysts");
+  if (cystShape === "Lentiform" || cystShape === "Variable shapes") {
+    add("Birt–Hogg–Dubé syndrome", 2, "Variable or lentiform cyst morphology");
+  }
+  if (family === "Yes") add("Birt–Hogg–Dubé syndrome", 3, "Family history of pneumothorax or cystic lung disease");
+  if (checked("skinLesions")) add("Birt–Hogg–Dubé syndrome", 2, "Skin lesions suggestive of a syndromic association");
+  if (ptx === "Recurrent" || ptx === "Bilateral") add("Birt–Hogg–Dubé syndrome", 1, "Recurrent or bilateral pneumothorax");
+
+  if (ctd === "Sjögren syndrome" || checked("sjogren")) {
+    add("LIP", 4, "Sjögren syndrome association");
+  }
+  if (hasFeature("Ground-glass opacity") && cysts === "Yes") {
+    add("LIP", 2, "Ground-glass opacity with cysts");
+  }
+  if (hasFeature("Centrilobular nodules") && cysts === "Yes") {
+    add("LIP", 1, "Centrilobular nodules with cysts");
+  }
+
+  if (checked("monoclonal")) {
+    add("Amyloidosis / light-chain deposition disease", 4, "Monoclonal gammopathy / amyloid suspicion");
+  }
+  if (cysts === "Yes" && valueOf("nodules") === "Present") {
+    add("Amyloidosis / light-chain deposition disease", 2, "Cysts associated with nodules");
+  }
+
+  /* Fibrotic ILD differentials */
+
+  if (honeycomb === "Present" || checked("uipHoney")) {
+    add("UIP pattern", 3, "Honeycombing");
+  }
+  if (lower && subpleural) add("UIP pattern", 2, "Basal and subpleural distribution");
+  if (checked("uipTraction") || valueOf("traction") === "Present") {
+    add("UIP pattern", 2, "Traction bronchiectasis");
+  }
+  if (checked("uipReticulation") || hasFeature("Reticulation")) {
+    add("UIP pattern", 1, "Reticular abnormality");
+  }
+  if (ildPattern === "UIP") add("UIP pattern", 3, "UIP selected in morphological assessment");
+
+  if (ildPattern === "NSIP") add("NSIP pattern", 3, "NSIP selected in morphological assessment");
+  if (hasFeature("Ground-glass opacity") && lower) {
+    add("NSIP pattern", 2, "Lower-zone ground-glass opacity");
+  }
+  if (valueOf("subpleural") === "Present") {
+    add("NSIP pattern", 2, "Subpleural sparing");
+  }
+  if (ctd && ctd !== "None known" && ctd !== "Other / suspected CTD") {
+    add("CTD-associated ILD / NSIP", 2, "Known connective tissue disease");
+  }
+
+  if (exposure === "Bird / feather exposure" || exposure === "Mould / damp environment") {
+    add("Hypersensitivity pneumonitis", 3, "Relevant antigen exposure");
+  }
+  if (hasFeature("Air trapping / mosaic attenuation")) {
+    add("Hypersensitivity pneumonitis", 2, "Air trapping / mosaic attenuation");
+  }
+  if (hasFeature("Centrilobular nodules")) {
+    add("Hypersensitivity pneumonitis", 2, "Centrilobular nodules");
+  }
+  if (ildPattern === "HP") add("Hypersensitivity pneumonitis", 3, "HP selected in morphological assessment");
+
+  if (ildPattern === "PPFE") add("PPFE pattern", 3, "PPFE selected in morphological assessment");
+  if (upper && hasFeature("Pleural thickening") && hasFeature("Upper-lobe fibrosis")) {
+    add("PPFE pattern", 4, "Upper-lobe pleural thickening and fibrosis");
+  }
+  if (hasFeature("Volume loss") && upper) add("PPFE pattern", 1, "Upper-lobe volume loss");
+
+  if (ildPattern === "OP") add("Organising pneumonia pattern", 3, "OP selected in morphological assessment");
+  if (hasFeature("Consolidation")) add("Organising pneumonia pattern", 2, "Consolidation");
+  if (dominant === "consolidation") add("Organising pneumonia pattern", 1, "Consolidation-predominant pattern");
+
+  if (ildPattern === "DAD") add("Diffuse alveolar damage pattern", 3, "DAD selected in morphological assessment");
+  if (dominant === "groundglass" && hasFeature("Crazy paving")) {
+    add("Diffuse alveolar damage pattern", 1, "Diffuse ground-glass / crazy paving pattern");
+  }
+
+  if (smoking === "Current smoker" || smoking === "Former smoker") {
+    if (hasFeature("Ground-glass opacity")) add("Smoking-related ILD (RB-ILD / DIP spectrum)", 2, "Smoking history with ground-glass opacity");
+    if (hasFeature("Centrilobular nodules")) add("RB-ILD pattern", 2, "Smoking history with centrilobular nodules");
+  }
+  if (ildPattern === "RBILD") add("RB-ILD pattern", 3, "RB-ILD selected in morphological assessment");
+  if (ildPattern === "DIP") add("DIP pattern", 3, "DIP selected in morphological assessment");
+
+  if (hasFeature("Emphysema") || dominant === "emphysema") {
+    add("Emphysema", 3, "Emphysematous lucencies");
+  }
+  if (hasFeature("Bullae")) add("Bullous lung disease", 3, "Bullae selected on HRCT");
+  if (hasFeature("Air trapping / mosaic attenuation")) {
+    add("Small airways disease", 1, "Air trapping / mosaic attenuation");
+  }
+
+  const sorted = Object.entries(scores)
+    .filter(entry => entry[1].score > 0)
+    .sort((a, b) => b[1].score - a[1].score);
+
+  const results = document.getElementById("results");
+
+  if (sorted.length === 0) {
+    results.innerHTML =
+      '<p class="result-empty">Insufficient selected features to generate a differential. Complete the clinical profile and HRCT checklist.</p>';
+    updateReport([]);
+    return;
+  }
+
+  results.innerHTML = sorted.slice(0, 10).map(([name, data], index) => {
+    const reasons = data.reasons.map(reason =>
+      '<span class="tag">' + escapeHTML(reason) + '</span>'
+    ).join("");
+
+    return `
+      <div class="result-card">
+        <span class="score">Score: ${data.score}</span>
+        <h3>${index + 1}. ${escapeHTML(name)}</h3>
+        <div>${reasons}</div>
+      </div>
+    `;
+  }).join("");
+
+  updateReport(sorted);
+}
+
+/* =========================================================
+   REPORT GENERATION
+   ========================================================= */
+
+function updateReport(sorted) {
+  const report = document.getElementById("report");
+
+  const features = selectedFeatures();
+  const profile = [
+    ["Age", valueOf("age")],
+    ["Sex", valueOf("sex")],
+    ["Smoking", valueOf("smoking")],
+    ["Pack-years", valueOf("packyears")],
+    ["CTD", valueOf("ctd")],
+    ["Exposure", valueOf("exposure")],
+    ["Drug exposure", valueOf("drug")],
+    ["Immunodeficiency", valueOf("immunodeficiency")]
+  ].filter(item => item[1]);
+
+  const hrct = [
+    ["Dominant pattern", valueOf("dominant")],
+    ["Craniocaudal distribution", valueOf("distribution")],
+    ["Axial distribution", valueOf("axial")],
+    ["Cyst morphology", valueOf("cystShape")],
+    ["Cyst wall", valueOf("cystWall")],
+    ["Cyst size", valueOf("cystSize")],
+    ["Costophrenic angle", valueOf("cpa")],
+    ["Honeycombing", valueOf("honeycomb")],
+    ["ILD pattern", valueOf("ildPattern")]
+  ].filter(item => item[1]);
+
+  const differential = sorted && sorted.length
+    ? sorted.slice(0, 5).map((entry, index) =>
+        (index + 1) + ". " + entry[0] + " (heuristic score: " + entry[1].score + ")"
+      ).join("\n")
+    : "Not generated";
+
+  const ppfText = document.getElementById("ppfResult").innerText;
+
+  const text = [
+    "PULMOCT AI – HRCT ASSESSMENT SUMMARY",
+    "",
+    "CLINICAL PROFILE",
+    ...profile.map(item => item[0] + ": " + item[1]),
+    "",
+    "HRCT FEATURES",
+    ...hrct.map(item => item[0] + ": " + item[1]),
+    "Associated features: " + (features.length ? features.join(", ") : "None selected"),
+    "",
+    "DIFFERENTIAL DIAGNOSIS (HEURISTIC)",
+    differential,
+    "",
+    "PPF ASSESSMENT",
+    ppfText,
+    "",
+    "NOTE: Educational checklist only. Not a validated diagnostic tool."
+  ].join("\n");
+
+  report.dataset.text = text;
+  report.innerHTML =
+    "<strong>Assessment summary prepared</strong>" +
+    "<p class='muted' style='font-size:12px'>Use Copy assessment to copy the structured summary.</p>" +
+    "<pre style='white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 monospace;color:inherit'>" +
+    escapeHTML(text) +
+    "</pre>";
+}
+
+/* =========================================================
+   BUTTON ACTIONS
+   ========================================================= */
+
+document.getElementById("analyseBtn").addEventListener("click", function() {
+  generateDifferential();
+  assessPPF();
+});
+
+document.getElementById("clearResultsBtn").addEventListener("click", function() {
+  document.getElementById("results").innerHTML =
+    '<p class="result-empty">Results cleared. Select features and generate the differential again.</p>';
+  document.getElementById("report").innerHTML =
+    '<p class="result-empty">Generate a differential to prepare the assessment summary.</p>';
+  delete document.getElementById("report").dataset.text;
+});
+
+document.getElementById("copyBtn").addEventListener("click", async function() {
+  const text = document.getElementById("report").dataset.text;
+
+  if (!text) {
+    alert("Generate the assessment summary first.");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Assessment copied.");
+  } catch (error) {
+    const temporary = document.createElement("textarea");
+    temporary.value = text;
+    document.body.appendChild(temporary);
+    temporary.select();
+    document.execCommand("copy");
+    temporary.remove();
+    alert("Assessment copied.");
+  }
+});
+
+document.getElementById("printBtn").addEventListener("click", function() {
+  window.print();
+});
+
+document.getElementById("resetBtn").addEventListener("click", function() {
+  const confirmed = confirm("Reset all clinical fields, HRCT selections and the uploaded image?");
+  if (!confirmed) return;
+
+  document.querySelectorAll("input").forEach(element => {
+    if (element.type === "checkbox") {
+      element.checked = false;
+    } else if (element.type !== "file") {
+      element.value = "";
+    }
+  });
+
+  document.querySelectorAll("select, textarea").forEach(element => {
+    element.selectedIndex = 0;
+    if (element.tagName === "TEXTAREA") element.value = "";
+  });
+
+  clearUploadedImage();
+
+  document.getElementById("results").innerHTML =
+    '<p class="result-empty">Select relevant clinical and HRCT features, then generate the differential.</p>';
+
+  document.getElementById("report").innerHTML =
+    '<p class="result-empty">Generate a differential to prepare the assessment summary.</p>';
+
+  delete document.getElementById("report").dataset.text;
+
+  document.getElementById("ppfResult").innerHTML =
+    '<p class="result-empty">Complete the PPF checklist and select whether alternative explanations have been excluded.</p>';
+});
+
+/* Keep PPF assessment current when the user changes its fields. */
+assessPPF();
+</script>
 </body>
 </html>
