@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+
+<title>PulmoCT AI | HRCT Diagnostic Assistant</title>
+
+<style>
+:root {
+  --bg:#101827;
+  --panel:#1b2738;
+  --panel2:#243348;
+  --text:#edf4fc;
+  --muted:#a6b6c9;
+  --accent:#55c4c0;
+  --border:#34465d;
+  --warning:#f3bd65;
+  --danger:#ef8888;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  line-height:1.55;
+}
+header {
+  padding:23px 18px;background:#152338;
+  border-bottom:1px solid var(--border);
+}
+header h1 {margin:0;font-size:25px}
+header p {margin:5px 0;color:var(--muted);font-size:13px}
+.container {max-width:1050px;margin:auto;padding:16px}
+.card {
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:13px;padding:17px;margin-bottom:15px;
+}
+h2 {font-size:18px;margin:0 0 13px}
+h3 {font-size:15px;color:var(--accent);margin:14px 0 7px}
+p {margin:7px 0}
+label {display:block;color:var(--muted);font-size:13px;margin-bottom:5px}
+select,input,textarea {
+  width:100%;padding:11px;background:var(--panel2);
+  border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-size:14px;margin-bottom:12px;
+}
+textarea {min-height:75px;resize:vertical}
+.grid {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));
+  gap:11px;
+}
+.checks {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:8px;
+}
+.check {
+  display:flex;align-items:flex-start;gap:8px;padding:9px;
+  background:var(--panel2);border-radius:8px;font-size:13px;
+}
+.check input {width:auto;margin:3px 0 0;accent-color:var(--accent)}
+button {
+  border:0;border-radius:8px;padding:12px 17px;
+  background:var(--accent);color:#10232a;font-weight:700;
+  font-size:14px;cursor:pointer;
+}
+button.secondary {
+  background:var(--panel2);color:var(--text);
+  border:1px solid var(--border);
+}
+.actions {display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.notice {
+  padding:12px;background:#332d24;border-left:4px solid var(--warning);
+  border-radius:6px;color:#f5dfbb;font-size:12px;margin-bottom:14px;
+}
+.small {font-size:12px;color:var(--muted)}
+.tag {
+  display:inline-block;padding:3px 8px;border-radius:5px;
+  background:#34465d;color:#dceaf8;font-size:11px;margin:3px;
+}
+.result {
+  padding:14px;margin:12px 0;background:#162c38;
+  border:1px solid #387c7b;border-radius:10px;
+}
+.result h3 {margin-top:0}
+.result.secondary-result {border-color:var(--border);background:var(--panel2)}
+.result p {font-size:13px}
+hr {border:0;border-top:1px solid var(--border);margin:15px 0}
+.hidden {display:none}
+.badge {
+  display:inline-block;border-radius:5px;padding:3px 8px;
+  background:#34465d;font-size:11px;color:#dceaf8;
+}
+footer {text-align:center;color:var(--muted);font-size:11px;padding:20px}
+details {background:var(--panel2);padding:10px;border-radius:8px;margin:8px 0}
+summary {cursor:pointer;font-size:13px;font-weight:600}
+.reference {font-size:13px;color:var(--muted)}
+@media print {
+  body {background:white;color:black}
+  .card,.result {background:white;color:black;border:1px solid #ccc}
+  button,.actions {display:none}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🫁 PulmoCT AI</h1>
+  <p>HRCT Pattern Recognition & Differential Diagnosis Assistant</p>
+  <p class="small">Respiratory Medicine | Educational prototype | Version 2.0</p>
+</header>
+
+<main class="container">
+
+<div class="notice">
+<strong>IMPORTANT MEDICAL DISCLAIMER</strong><br>
+This is an educational, rule-based HRCT pattern-matching application.
+It does not perform automated image analysis, does not process DICOM
+volumes and does not provide validated diagnostic probabilities.
+It is not an ATS/ERS-approved diagnostic instrument. All outputs require
+clinical, radiological and, where appropriate, multidisciplinary review.
+</div>
+
+<!-- PATIENT INFORMATION -->
+
+<section class="card">
+<h2>1. Clinical profile</h2>
+
+<div class="grid">
+
+<div>
+<label>Age (years)</label>
+<input type="number" id="age" min="1" max="120">
+</div>
+
+<div>
+<label>Sex</label>
+<select id="sex">
+<option value="">Unknown</option>
+<option value="female">Female</option>
+<option value="male">Male</option>
+<option value="other">Other / unspecified</option>
+</select>
+</div>
+
+<div>
+<label>Smoking status</label>
+<select id="smoking">
+<option value="">Unknown</option>
+<option value="never">Never smoker</option>
+<option value="current">Current smoker</option>
+<option value="former">Former smoker</option>
+</select>
+</div>
+
+<div>
+<label>Connective tissue disease</label>
+<select id="ctd">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Family history of ILD / pneumothorax / renal tumours</label>
+<select id="family">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Recurrent pneumothorax</label>
+<select id="pneumo">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Relevant occupational / environmental exposure</label>
+<select id="exposure">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Drug exposure associated with ILD</label>
+<select id="drug">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Immunodeficiency / HIV</label>
+<select id="immune">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+</div>
+</section>
+
+<!-- PRIMARY CT PATTERN -->
+
+<section class="card">
+<h2>2. Dominant HRCT pattern</h2>
+
+<div class="grid">
+
+<div>
+<label>Predominant pattern</label>
+<select id="dominant">
+<option value="">Select pattern</option>
+<option value="diffuse_cysts">Diffuse cystic lung disease</option>
+<option value="upper_cysts">Upper / middle-zone cystic disease</option>
+<option value="basal_cysts">Basal / medial cystic disease</option>
+<option value="honeycombing">Honeycombing</option>
+<option value="reticulation">Reticulation / fibrosis</option>
+<option value="ggo">Ground-glass predominant</option>
+<option value="nodules">Pulmonary nodules</option>
+<option value="bullae">Emphysema / bullae</option>
+<option value="airway">Airway-centred / bronchiolocentric pattern</option>
+<option value="mixed">Mixed interstitial pattern</option>
+</select>
+</div>
+
+<div>
+<label>Craniocaudal distribution</label>
+<select id="distribution">
+<option value="">Unknown</option>
+<option value="upper">Upper-zone predominant</option>
+<option value="middle">Middle-zone predominant</option>
+<option value="lower">Lower-zone predominant</option>
+<option value="diffuse">Diffuse</option>
+</select>
+</div>
+
+<div>
+<label>Axial distribution</label>
+<select id="axial">
+<option value="">Unknown</option>
+<option value="subpleural">Subpleural / peripheral</option>
+<option value="central">Central / peribronchovascular</option>
+<option value="random">Random</option>
+<option value="uniform">No clear predominance</option>
+</select>
+</div>
+
+<div>
+<label>Subpleural sparing</label>
+<select id="sparing">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Cyst morphology</label>
+<select id="shape">
+<option value="">Unknown / not applicable</option>
+<option value="round">Round / regular</option>
+<option value="irregular">Irregular / bizarre</option>
+<option value="elongated">Elongated / lentiform</option>
+<option value="variable">Variable morphology</option>
+</select>
+</div>
+
+<div>
+<label>Cyst wall</label>
+<select id="wall">
+<option value="">Unknown</option>
+<option value="thin">Thin-walled</option>
+<option value="thick">Thick-walled</option>
+<option value="imperceptible">Imperceptible / absent</option>
+</select>
+</div>
+
+<div>
+<label>Costophrenic angle involvement</label>
+<select id="cpa">
+<option value="">Unknown</option>
+<option value="spared">Spared</option>
+<option value="involved">Involved</option>
+</select>
+</div>
+
+<div>
+<label>Ground-glass opacity</label>
+<select id="ggo">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Honeycombing</label>
+<select id="honey">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+</div>
+</section>
+
+<!-- ASSOCIATED FEATURES -->
+
+<section class="card">
+<h2>3. Associated HRCT features</h2>
+
+<div class="checks" id="features">
+
+<label class="check"><input type="checkbox" value="centrilobular_nodules"> Centrilobular nodules</label>
+<label class="check"><input type="checkbox" value="cavitating_nodules"> Cavitating nodules</label>
+<label class="check"><input type="checkbox" value="bizarre_cysts"> Bizarre-shaped cysts</label>
+<label class="check"><input type="checkbox" value="traction"> Traction bronchiectasis / bronchiolectasis</label>
+<label class="check"><input type="checkbox" value="honeycomb"> Stacked subpleural honeycomb cysts</label>
+<label class="check"><input type="checkbox" value="emphysema"> Centrilobular emphysema</label>
+<label class="check"><input type="checkbox" value="paraseptal"> Paraseptal emphysema</label>
+<label class="check"><input type="checkbox" value="bullae"> Large bullae</label>
+<label class="check"><input type="checkbox" value="airtrapping"> Mosaic attenuation / expiratory air trapping</label>
+<label class="check"><input type="checkbox" value="septal"> Interlobular septal thickening</label>
+<label class="check"><input type="checkbox" value="bronchiectasis"> Bronchiectasis</label>
+<label class="check"><input type="checkbox" value="consolidation"> Consolidation</label>
+<label class="check"><input type="checkbox" value="ggo"> Ground-glass opacity</label>
+<label class="check"><input type="checkbox" value="cysts"> Multiple discrete cysts</label>
+<label class="check"><input type="checkbox" value="pneumothorax"> Pneumothorax</label>
+<label class="check"><input type="checkbox" value="angiomyolipoma"> Renal angiomyolipoma</label>
+<label class="check"><input type="checkbox" value="renal_tumour"> Renal tumour</label>
+<label class="check"><input type="checkbox" value="lymphadenopathy"> Mediastinal lymphadenopathy</label>
+<label class="check"><input type="checkbox" value="pleural_effusion"> Pleural effusion</label>
+<label class="check"><input type="checkbox" value="upper_pleural_fibrosis"> Upper-lobe pleural thickening / fibrosis</label>
+<label class="check"><input type="checkbox" value="three_density"> Three-density pattern</label>
+<label class="check"><input type="checkbox" value="airway_centric"> Airway-centred fibrosis</label>
+<label class="check"><input type="checkbox" value="calcification"> Cyst wall / parenchymal calcification</label>
+<label class="check"><input type="checkbox" value="mediastinal_hilar"> Hilar / mediastinal adenopathy</label>
+
+</div>
+</section>
+
+<!-- CYSTIC LUNG DISEASE -->
+
+<section class="card">
+<h2>4. Cystic lung disease assessment</h2>
+
+<p class="small">
+Assess whether the air-containing spaces are true cysts or mimics.
+The complete thin-section CT series and multiplanar images are important.
+</p>
+
+<div class="grid">
+
+<div>
+<label>Distribution of cysts</label>
+<select id="cystdistribution">
+<option value="">Unknown</option>
+<option value="diffuse">Diffuse bilateral</option>
+<option value="upper">Upper / middle predominant</option>
+<option value="lower">Lower predominant</option>
+<option value="medial">Basal medial predominant</option>
+<option value="subpleural">Subpleural predominant</option>
+</select>
+</div>
+
+<div>
+<label>Intervening lung parenchyma</label>
+<select id="intervening">
+<option value="">Unknown</option>
+<option value="preserved">Relatively preserved</option>
+<option value="abnormal">Abnormal with GGO / nodules / fibrosis</option>
+</select>
+</div>
+
+<div>
+<label>Cyst size variation</label>
+<select id="cystsize">
+<option value="">Unknown</option>
+<option value="uniform">Relatively uniform</option>
+<option value="variable">Variable</option>
+</select>
+</div>
+
+<div>
+<label>Predominant morphology of air spaces</label>
+<select id="airspaces">
+<option value="">Unknown</option>
+<option value="truecysts">Discrete true cysts</option>
+<option value="honeycomb">Subpleural stacked honeycombing</option>
+<option value="bullae">Emphysematous spaces / bullae</option>
+<option value="pneumatoceles">Pneumatoceles</option>
+<option value="cavities">Thick-walled cavities</option>
+</select>
+</div>
+
+</div>
+</section>
+
+<!-- ILD CLASSIFICATION -->
+
+<section class="card">
+<h2>5. ILD classification – 2025 ERS/ATS framework</h2>
+
+<div class="notice">
+The 2025 ERS/ATS international multidisciplinary classification expands
+the classification beyond idiopathic interstitial pneumonias to include
+secondary causes. It distinguishes interstitial patterns from alveolar
+filling disorders and recognises bronchiolocentric interstitial pneumonia
+(BIP) as a major interstitial pattern.
+</div>
+
+<div class="grid">
+
+<div>
+<label>Predominant interstitial pattern</label>
+<select id="ildpattern">
+<option value="">Not determined</option>
+<option value="UIP">UIP pattern</option>
+<option value="NSIP">NSIP pattern</option>
+<option value="BIP">Bronchiolocentric interstitial pneumonia (BIP)</option>
+<option value="DAD">Diffuse alveolar damage (DAD)</option>
+<option value="PPFE">Pleuroparenchymal fibroelastosis (PPFE)</option>
+<option value="LIP">Lymphoid interstitial pneumonia (LIP)</option>
+<option value="OP">Organising pneumonia (OP)</option>
+<option value="RBILD">Respiratory bronchiolitis-associated ILD</option>
+<option value="AMP">Alveolar macrophage pneumonia (AMP; formerly DIP)</option>
+<option value="combined">Combined / overlapping pattern</option>
+<option value="unclassifiable">Unclassifiable pattern</option>
+</select>
+</div>
+
+<div>
+<label>Interstitial disease behaviour</label>
+<select id="fibrotic">
+<option value="">Unknown</option>
+<option value="fibrotic">Fibrotic</option>
+<option value="nonfibrotic">Non-fibrotic</option>
+<option value="mixed">Mixed / uncertain</option>
+</select>
+</div>
+
+<div>
+<label>Likely aetiological category</label>
+<select id="etiology">
+<option value="">Undetermined</option>
+<option value="secondary">Secondary / associated cause suspected</option>
+<option value="idiopathic">Idiopathic cause considered after exclusion</option>
+<option value="genetic">Genetic / familial cause suspected</option>
+<option value="unclassifiable">Unclassifiable at present</option>
+</select>
+</div>
+
+</div>
+
+<h3>Important terminology</h3>
+
+<details>
+<summary>2025 classification changes</summary>
+<p>1. Classification now incorporates both secondary and idiopathic interstitial pneumonias.</p>
+<p>2. BIP is introduced as a major interstitial pattern, including airway-centred disease associated with hypersensitivity pneumonitis, CTD, aspiration and other causes.</p>
+<p>3. Acute interstitial pneumonia is replaced by idiopathic diffuse alveolar damage (DAD) in the classification terminology.</p>
+<p>4. Desquamative interstitial pneumonia (DIP) is renamed alveolar macrophage pneumonia (AMP).</p>
+<p>5. Interstitial disorders are subclassified as fibrotic or non-fibrotic.</p>
+<p>6. Combined and unclassifiable patterns are explicitly recognised.</p>
+<p>7. Pattern recognition must be separated from the final multidisciplinary diagnosis.</p>
+</details>
+
+</section>
+
+<!-- UIP CLASSIFICATION -->
+
+<section class="card">
+<h2>6. UIP pattern assessment</h2>
+
+<p class="small">
+For cases with suspected fibrotic ILD, assess the following features.
+This is a teaching checklist, not a substitute for formal HRCT categorisation.
+</p>
+
+<div class="grid">
+
+<div>
+<label>Subpleural and basal predominance</label>
+<select id="uipdistribution">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Honeycombing with or without traction bronchiectasis</label>
+<select id="uiphoney">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Reticulation with peripheral traction bronchiectasis</label>
+<select id="uiptraction">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+<div>
+<label>Features suggesting an alternative diagnosis</label>
+<select id="uipalternative">
+<option value="">Unknown</option>
+<option value="yes">Present</option>
+<option value="no">Absent</option>
+</select>
+</div>
+
+</div>
+</section>
+
+<!-- PROGRESSION -->
+
+<section class="card">
+<h2>7. Progressive pulmonary fibrosis (PPF) assessment</h2>
+
+<p class="small">
+ATS/ERS/JRS/ALAT 2022 guideline: PPF in an ILD other than IPF is defined
+by at least two of three criteria within the preceding year, with no
+alternative explanation.
+</p>
+
+<div class="checks">
+
+<label class="check"><input type="checkbox" id="ppf_symptoms"> Worsening respiratory symptoms</label>
+<label class="check"><input type="checkbox" id="ppf_fvc"> Absolute FVC decline ≥5 percentage points predicted</label>
+<label class="check"><input type="checkbox" id="ppf_dlco"> Absolute DLCO decline ≥10 percentage points predicted</label>
+<label class="check"><input type="checkbox" id="ppf_ct"> Radiological progression of fibrosis</label>
+
+</div>
+
+<div class="grid" style="margin-top:12px">
+<div>
+<label>Alternative explanation for deterioration?</label>
+<select id="ppf_alternative">
+<option value="">Unknown</option>
+<option value="yes">Yes</option>
+<option value="no">No</option>
+</select>
+</div>
+<div>
+<label>Assessment period</label>
+<select id="ppf_period">
+<option value="year">Within preceding 12 months</option>
+<option value="other">Outside preceding 12 months / uncertain</option>
+</select>
+</div>
+</div>
+</section>
+
+<!-- RESULTS -->
+
+<section class="card">
+<h2>8. Generate structured HRCT assessment</h2>
+
+<label>Additional radiological / clinical observations</label>
+<textarea id="notes" placeholder="Enter additional findings, relevant history, lung function, exposure history, etc."></textarea>
+
+<div class="actions">
+<button onclick="analyse()">Generate assessment</button>
+<button class="secondary" onclick="resetForm()">Reset all fields</button>
+</div>
+
+<div id="output" class="hidden"></div>
+
+</section>
+
+<!-- REFERENCE -->
+
+<section class="card">
+<h2>9. HRCT pattern reference library</h2>
+
+<details>
+<summary>Diffuse cystic lung diseases</summary>
+<p><strong>LAM:</strong> Diffuse, bilateral, relatively uniform, round, thin-walled cysts with relatively preserved intervening parenchyma. Consider angiomyolipoma and chylous manifestations.</p>
+<p><strong>PLCH:</strong> Upper and middle zone predominant nodules and irregular/bizarre cysts, with relative costophrenic angle sparing. Strong smoking association.</p>
+<p><strong>Birt–Hogg–Dubé:</strong> Variable-sized, irregular, often lentiform cysts with lower-lung, medial and subpleural predominance. Consider renal neoplasia and fibrofolliculomas.</p>
+<p><strong>LIP:</strong> Cysts with ground-glass opacity, nodules and septal thickening. Consider Sjögren syndrome, CTD and immunodeficiency.</p>
+<p><strong>Pulmonary amyloidosis / light-chain deposition:</strong> May show nodules, calcification and cystic abnormalities. Consider associated lymphoproliferative disease and Sjögren syndrome.</p>
+</details>
+
+<details>
+<summary>Cystic mimics</summary>
+<p><strong>Emphysema:</strong> Low attenuation with absent or imperceptible walls and destruction of alveolar architecture.</p>
+<p><strong>Paraseptal emphysema:</strong> Subpleural low-attenuation spaces adjacent to interlobular septa; may mimic cysts.</p>
+<p><strong>Bullae:</strong> Focal air-containing spaces, generally greater than 1 cm, with very thin walls and adjacent emphysematous lung.</p>
+<p><strong>Honeycombing:</strong> Clustered, usually subpleural, thick-walled cystic air spaces in fibrotic lung, commonly with architectural distortion and traction bronchiectasis.</p>
+<p><strong>Pneumatoceles:</strong> Thin-walled air spaces, frequently associated with infection or trauma.</p>
+<p><strong>Cavities:</strong> Gas-containing spaces within nodules, masses or consolidation, usually with a definable wall.</p>
+</details>
+
+<details>
+<summary>Fibrotic interstitial lung disease patterns</summary>
+<p><strong>UIP:</strong> Subpleural and basal predominant reticulation, traction bronchiectasis and honeycombing. Distinguish radiological pattern from the diagnosis of IPF.</p>
+<p><strong>NSIP:</strong> Ground-glass opacity, fine reticulation and traction bronchiectasis, often with relative subpleural sparing.</p>
+<p><strong>BIP:</strong> Airway-centred interstitial pattern; consider HP, CTD, aspiration, occupational exposure and drug-related causes.</p>
+<p><strong>PPFE:</strong> Upper-lobe pleural thickening, subpleural fibrosis, volume loss and architectural distortion.</p>
+<p><strong>LIP:</strong> Interstitial lymphoid disease with cysts, GGO, nodules and septal thickening.</p>
+<p><strong>Organising pneumonia:</strong> Patchy peripheral or peribronchovascular consolidation, sometimes with a perilobular pattern.</p>
+</details>
+
+<details>
+<summary>Important differential diagnoses and associations</summary>
+<p>PLCH – smoking, upper-lobe cysts and nodules.</p>
+<p>LAM – diffuse cysts, renal angiomyolipoma, VEGF-D assessment.</p>
+<p>Birt–Hogg–Dubé – FLCN mutation, familial pneumothorax, renal tumours.</p>
+<p>LIP – Sjögren syndrome, CTD, immunodeficiency.</p>
+<p>UIP – IPF, CTD, chronic HP, drug-associated fibrosis.</p>
+<p>NSIP – CTD, medications, HP and idiopathic NSIP.</p>
+<p>PPFE – idiopathic or secondary to CTD, HP, transplantation, infection and other causes.</p>
+</details>
+
+</section>
+
+<!-- REFERENCES -->
+
+<section class="card">
+<h2>10. Suggested authoritative references</h2>
+
+<div class="reference">
+<p>1. Ryerson CJ et al. Update of the international multidisciplinary classification of the interstitial pneumonias: an ERS/ATS statement. European Respiratory Journal. 2025.</p>
+
+<p>2. Raghu G et al. Idiopathic Pulmonary Fibrosis (an Update) and Progressive Pulmonary Fibrosis in Adults: Official ATS/ERS/JRS/ALAT Clinical Practice Guideline. AJRCCM. 2022.</p>
+
+<p>3. Raghu G et al. Diagnosis of Hypersensitivity Pneumonitis in Adults: Official ATS/JRS/ALAT Clinical Practice Guideline. AJRCCM. 2020.</p>
+
+<p>4. Fishman's Pulmonary Diseases and Disorders. Use the relevant chapters on ILD, IPF, cystic lung disease and pulmonary histiocytic disorders for supplementary textbook learning.</p>
+
+<p>5. Travis WD et al. An Official ATS/ERS Statement: Update of the International Multidisciplinary Classification of the Idiopathic Interstitial Pneumonias. AJRCCM. 2013.</p>
+
+<p>6. ATS/JRS Clinical Practice Guidelines for LAM and relevant rare cystic lung disease literature.</p>
+</div>
+</section>
+
+<footer>
+PulmoCT AI v2.0 | Educational medical research prototype<br>
+Not a validated clinical diagnostic system | Radiologist and MDT correlation essential
+</footer>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const val = id => $(id).value;
+const checked = id => $(id).checked;
+const selectedFeatures = () =>
+  [...document.querySelectorAll("#features input:checked")].map(x=>x.value);
+
+const diseaseInfo = {
+LAM:{
+name:"Lymphangioleiomyomatosis (LAM)",
+description:"Diffuse, bilateral, relatively uniform, round, thin-walled cysts with preserved intervening lung.",
+association:"Predominantly affects women. Assess for renal angiomyolipoma, chylous effusion and tuberous sclerosis complex.",
+workup:"Serum VEGF-D, abdominal imaging and assessment for extrapulmonary manifestations. VEGF-D ≥800 pg/mL in an appropriate clinical setting supports a non-invasive diagnosis.",
+},
+PLCH:{
+name:"Pulmonary Langerhans cell histiocytosis (PLCH)",
+description:"Upper and middle zone predominant nodules and bizarre-shaped cysts with relative costophrenic angle sparing.",
+association:"Strong association with cigarette smoking. Pneumothorax may occur.",
+workup:"Smoking history, complete HRCT distribution, pulmonary function testing and appropriate histological assessment when required.",
+},
+BHD:{
+name:"Birt–Hogg–Dubé syndrome",
+description:"Variable-sized irregular, lentiform or elliptical cysts, commonly in lower medial and subpleural regions.",
+association:"Familial pneumothorax, fibrofolliculomas and renal neoplasia.",
+workup:"Consider FLCN genetic testing, dermatological assessment, family screening and renal surveillance.",
+},
+LIP:{
+name:"Lymphoid interstitial pneumonia (LIP)",
+description:"Cysts associated with GGO, centrilobular nodules, septal thickening and other interstitial abnormalities.",
+association:"Sjögren syndrome, connective tissue disease and immunodeficiency.",
+workup:"Autoimmune evaluation, immunoglobulins and assessment for associated lymphoproliferative disorders where clinically indicated.",
+},
+AMYLOID:{
+name:"Pulmonary amyloidosis / light-chain deposition disease",
+description:"May present with pulmonary nodules, cysts and calcification.",
+association:"Sjögren syndrome and lymphoproliferative disorders may be relevant.",
+workup:"Consider serum and urine monoclonal protein evaluation and tissue diagnosis where indicated.",
+},
+UIP:{
+name:"Usual interstitial pneumonia (UIP) pattern",
+description:"Basal and subpleural reticulation, architectural distortion, traction bronchiectasis and honeycombing.",
+association:"IPF is an idiopathic diagnosis. Secondary UIP occurs with CTD, HP, medications and other causes.",
+workup:"Review exposure, medication and autoimmune history. Integrate HRCT, physiology and multidisciplinary discussion.",
+},
+NSIP:{
+name:"Nonspecific interstitial pneumonia (NSIP) pattern",
+description:"Ground-glass opacity, fine reticulation, traction bronchiectasis and possible relative subpleural sparing.",
+association:"CTD, medications, HP and idiopathic NSIP.",
+workup:"Autoimmune serology, exposure history, medication review and multidisciplinary evaluation.",
+},
+BIP:{
+name:"Bronchiolocentric interstitial pneumonia (BIP) pattern",
+description:"Airway-centred interstitial abnormalities and fibrosis.",
+association:"HP, CTD, aspiration, occupational and inhalational exposure and medication-related disease.",
+workup:"Detailed exposure history, expiratory CT, airway-centred findings and appropriate clinical-pathological correlation.",
+},
+PPFE:{
+name:"Pleuroparenchymal fibroelastosis (PPFE) pattern",
+description:"Upper-lobe predominant pleural thickening and subpleural fibrosis with volume loss.",
+association:"Can be idiopathic or secondary to CTD, HP, medications, transplantation, radiation or infection.",
+workup:"Evaluate associated ILD, previous infection, transplantation and clinical course.",
+},
+DAD:{
+name:"Diffuse alveolar damage (DAD) pattern",
+description:"Acute diffuse alveolar injury, often with bilateral GGO and consolidation.",
+association:"Infection, sepsis, drugs, acute exacerbation and other causes.",
+workup:"Identify the underlying cause and distinguish secondary DAD from the provisional idiopathic category.",
+},
+OP:{
+name:"Organising pneumonia (OP) pattern",
+description:"Patchy peripheral or peribronchovascular consolidation, sometimes perilobular opacity.",
+association:"Post-infectious, CTD, drugs, aspiration or cryptogenic organising pneumonia.",
+workup:"Medication, infection, aspiration and autoimmune assessment.",
+},
+RBILD:{
+name:"Respiratory bronchiolitis-associated ILD",
+description:"Centrilobular nodules, patchy GGO and airway wall thickening.",
+association:"Strong smoking association.",
+workup:"Smoking history, pulmonary function testing and assessment for other smoking-related ILD.",
+},
+AMP:{
+name:"Alveolar macrophage pneumonia (AMP; formerly DIP)",
+description:"Predominantly diffuse or patchy ground-glass opacity, often with lower-zone predominance.",
+association:"Most commonly smoking-related, but other secondary associations occur.",
+workup:"Smoking and exposure history, medication review and appropriate histological correlation.",
+},
+EMPHYSEMA:{
+name:"Pulmonary emphysema / bullous disease",
+description:"Low-attenuation areas with alveolar destruction; bullae are focal air-containing spaces with very thin walls.",
+association:"Smoking, alpha-1 antitrypsin deficiency and other causes.",
+workup:"Spirometry, distribution assessment and alpha-1 antitrypsin evaluation where appropriate.",
+},
+HP:{
+name:"Hypersensitivity pneumonitis (HP)",
+description:"May show centrilobular nodules, mosaic attenuation, air trapping and three-density pattern. Fibrotic HP may show reticulation and traction bronchiectasis.",
+association:"Inhaled antigen exposure, including birds, mould and occupational antigens.",
+workup:"Detailed exposure assessment, HRCT inspiratory and expiratory imaging, BAL lymphocytosis when indicated and multidisciplinary diagnosis.",
+},
+RB:{
+name:"Respiratory bronchiolitis pattern",
+description:"Centrilobular nodules and airway-centred abnormalities.",
+association:"Usually smoking-related.",
+workup:"Smoking history and assessment for associated interstitial abnormalities.",
+}
+};
+
+function analyse(){
+const dominant=val("dominant");
+if(!dominant){alert("Select the dominant HRCT pattern.");return;}
+
+const f=selectedFeatures();
+const has=x=>f.includes(x);
+const scores={};
+const reasons={};
+
+function add(key,condition,reason){
+ if(!condition)return;
+ scores[key]=(scores[key]||0)+1;
+ reasons[key]=reasons[key]||[];
+ reasons[key].push(reason);
+}
+
+// Cystic lung disease pattern matching
+add("LAM",dominant==="diffuse_cysts","Diffuse cystic pattern");
+add("LAM",val("shape")==="round","Round cyst morphology");
+add("LAM",val("wall")==="thin","Thin-walled cysts");
+add("LAM",val("distribution")==="diffuse","Diffuse distribution");
+add("LAM",val("cystdistribution")==="diffuse","Diffuse cyst distribution");
+add("LAM",val("cystsize")==="uniform","Relatively uniform cyst size");
+add("LAM",val("intervening")==="preserved","Preserved intervening parenchyma");
+add("LAM",has("angiomyolipoma"),"Renal angiomyolipoma");
+add("LAM",val("sex")==="female","Female sex – contextual association");
+add("LAM",val("pneumo")==="yes","History of pneumothorax");
+
+add("PLCH",dominant==="upper_cysts","Upper-zone cystic pattern");
+add("PLCH",val("distribution")==="upper","Upper-zone predominance");
+add("PLCH",val("cystdistribution")==="upper","Upper/middle cyst distribution");
+add("PLCH",val("shape")==="irregular","Irregular cyst morphology");
+add("PLCH",val("cpa")==="spared","Costophrenic angle sparing");
+add("PLCH",has("centrilobular_nodules"),"Centrilobular nodules");
+add("PLCH",has("cavitating_nodules"),"Cavitating nodules");
+add("PLCH",has("bizarre_cysts"),"Bizarre cyst morphology");
+add("PLCH",["current","former"].includes(val("smoking")),"Smoking history");
+
+add("BHD",dominant==="basal_cysts","Basal cystic pattern");
+add("BHD",val("cystdistribution")==="medial","Basal medial cyst distribution");
+add("BHD",val("cystdistribution")==="lower","Lower-lung cyst distribution");
+add("BHD",val("shape")==="elongated","Elongated cyst morphology");
+add("BHD",val("shape")==="irregular","Irregular cyst morphology");
+add("BHD",val("family")==="yes","Relevant family history");
+add("BHD",has("renal_tumour"),"Renal tumour");
+add("BHD",val("pneumo")==="yes","Pneumothorax history");
+
+add("LIP",dominant==="diffuse_cysts","Diffuse cystic pattern");
+add("LIP",val("ggo")==="yes","Ground-glass opacity");
+add("LIP",has("septal"),"Interlobular septal thickening");
+add("LIP",has("centrilobular_nodules"),"Nodules");
+add("LIP",val("ctd")==="yes","Connective tissue disease");
+add("LIP",val("immune")==="yes","Immunodeficiency");
+add("LIP",val("intervening")==="abnormal","Abnormal intervening parenchyma");
+
+add("AMYLOID",has("calcification"),"Calcification");
+add("AMYLOID",has("cysts")&&has("centrilobular_nodules"),"Coexisting cysts and nodules");
+add("AMYLOID",val("ctd")==="yes","Associated connective tissue disease");
+
+add("EMPHYSEMA",dominant==="bullae","Emphysema/bullous dominant pattern");
+add("EMPHYSEMA",val("wall")==="imperceptible","Imperceptible cyst wall");
+add("EMPHYSEMA",has("emphysema"),"Centrilobular emphysema");
+add("EMPHYSEMA",has("paraseptal"),"Paraseptal emphysema");
+add("EMPHYSEMA",has("bullae"),"Bullae");
+
+add("UIP",dominant==="honeycombing","Honeycombing dominant pattern");
+add("UIP",dominant==="reticulation"&&val("distribution")==="lower","Basal reticulation");
+add("UIP",val("honey")==="yes","Honeycombing");
+add("UIP",has("honeycomb"),"Stacked subpleural honeycombing");
+add("UIP",has("traction"),"Traction bronchiectasis");
+add("UIP",val("axial")==="subpleural","Subpleural distribution");
+
+add("NSIP",dominant==="reticulation","Reticular pattern");
+add("NSIP",dominant==="ggo","GGO predominant pattern");
+add("NSIP",val("ggo")==="yes","Ground-glass opacity");
+add("NSIP",has("traction"),"Traction bronchiectasis");
+add("NSIP",val("sparing")==="yes","Subpleural sparing");
+add("NSIP",val("ctd")==="yes","Connective tissue disease");
+
+add("HP",dominant==="airway","Airway-centred pattern");
+add("HP",has("three_density"),"Three-density pattern");
+add("HP",has("airtrapping"),"Expiratory air trapping");
+add("HP",has("centrilobular_nodules"),"Centrilobular nodules");
+add("HP",val("exposure")==="yes","Exposure history");
+add("HP",val("fibrotic")==="fibrotic","Fibrotic phenotype");
+
+add("PPFE",has("upper_pleural_fibrosis"),"Upper pleural fibrosis");
+add("PPFE",dominant==="reticulation"&&val("distribution")==="upper","Upper-zone fibrosis");
+add("PPFE",has("traction"),"Traction bronchiectasis");
+
+add("RBILD",has("centrilobular_nodules"),"Centrilobular nodules");
+add("RBILD",val("ggo")==="yes","Ground-glass opacity");
+add("RBILD",["current","former"].includes(val("smoking")),"Smoking history");
+
+add("AMP",dominant==="ggo","GGO predominant pattern");
+add("AMP",val("ggo")==="yes","Ground-glass opacity");
+add("AMP",["current","former"].includes(val("smoking")),"Smoking history");
+
+add("OP",has("consolidation"),"Consolidation");
+add("OP",dominant==="mixed","Mixed parenchymal pattern");
+
+add("BIP",dominant==="airway","Airway-centred pattern");
+add("BIP",has("airway_centric"),"Airway-centred fibrosis");
+add("BIP",val("exposure")==="yes","Potential inhalational exposure");
+add("BIP",val("ctd")==="yes","Connective tissue disease");
+
+add("DAD",dominant==="ggo"&&has("consolidation"),"Acute alveolar filling pattern");
+add("DAD",has("consolidation"),"Consolidation");
+
+const sorted=Object.entries(scores)
+.filter(([k,v])=>v>0)
+.sort((a,b)=>b[1]-a[1]);
+
+const selectedIld=val("ildpattern");
+const fibrotic=val("fibrotic");
+const etiology=val("etiology");
+
+const output=$("output");
+output.classList.remove("hidden");
+
+let html=`
+<h2>HRCT pattern assessment</h2>
+<div class="notice">
+These are feature concordance rankings generated by a manually constructed
+rule-based system. They are not probabilities, diagnostic likelihood ratios
+or validated model predictions. The absence of a disease from this list
+does not exclude it.
+</div>
+<h3>Ranked differential diagnoses</h3>
+`;
+
+if(sorted.length===0){
+ html+="<p>No meaningful feature matches. Review the selected findings and consider an unclassified or alternative pattern.</p>";
+}
+
+sorted.forEach(([key,score],i)=>{
+ const d=diseaseInfo[key];
+ if(!d)return;
+ html+=`
+ <div class="result ${i===0?"":"secondary-result"}">
+ <span class="badge">${i===0?"Top feature match":"Differential diagnosis"}</span>
+ <h3>${d.name}</h3>
+ <span class="tag">${score} matching features</span>
+ <p><strong>Radiological pattern:</strong> ${d.description}</p>
+ <p><strong>Clinical associations:</strong> ${d.association}</p>
+ <p><strong>Further assessment:</strong> ${d.workup}</p>
+ <p class="small"><strong>Matched findings:</strong> ${reasons[key].join("; ")}</p>
+ </div>`;
+});
+
+// ILD classification
+html+=`<hr><h3>ERS/ATS 2025 classification record</h3>`;
+
+if(selectedIld){
+ html+=`<p><strong>Selected morphological pattern:</strong> ${selectedIld}</p>`;
+ html+=`<p><strong>Fibrotic phenotype:</strong> ${fibrotic||"Not specified"}</p>`;
+ html+=`<p><strong>Aetiological category:</strong> ${etiology||"Undetermined"}</p>`;
+ html+=`<p class="small">The selected pattern is not equivalent to a final idiopathic or secondary diagnosis. Secondary causes should be evaluated before assigning an idiopathic diagnosis.</p>`;
+}else{
+ html+="<p>No ILD morphological classification selected.</p>";
+}
+
+// UIP category
+html+=`<hr><h3>UIP HRCT checklist</h3>`;
+
+const uipDist=val("uipdistribution");
+const uipHoney=val("uiphoney");
+const uipTraction=val("uiptraction");
+const uipAlt=val("uipalternative");
+
+if(uipDist||uipHoney||uipTraction||uipAlt){
+ let uipText="Indeterminate – incomplete assessment.";
+ if(uipAlt==="yes")uipText="Features suggest an alternative diagnosis; assess the alternative pattern.";
+ else if(uipDist==="yes"&&uipHoney==="yes")uipText="Features are compatible with a UIP pattern. Confirm formal HRCT criteria.";
+ else if(uipDist==="yes"&&uipHoney==="no"&&uipTraction==="yes")uipText="Could be compatible with probable UIP, depending on complete HRCT morphology and exclusions.";
+ else if(uipDist==="no"&&uipHoney==="no")uipText="The entered findings do not establish a typical UIP pattern.";
+ html+=`<div class="result"><strong>${uipText}</strong><p class="small">This simplified checklist does not assign formal ATS/ERS HRCT categories. Review the complete scan against the official radiological criteria.</p></div>`;
+}else{
+ html+="<p>UIP assessment not completed.</p>";
+}
+
+// PPF assessment
+html+=`<hr><h3>Progressive pulmonary fibrosis assessment</h3>`;
+
+const ppfCount=[
+checked("ppf_symptoms"),
+checked("ppf_fvc"),
+checked("ppf_dlco"),
+checked("ppf_ct")
+].filter(Boolean).length;
+
+// Official PPF criteria are 2 of 3 domains:
+// symptoms, physiology (FVC OR DLCO), radiology.
+const ppfDomains=[
+checked("ppf_symptoms"),
+checked("ppf_fvc")||checked("ppf_dlco"),
+checked("ppf_ct")
+].filter(Boolean).length;
+
+const ppfAlt=val("ppf_alternative");
+const ppfPeriod=val("ppf_period");
+
+if(ppfPeriod==="year"&&ppfDomains>=2&&ppfAlt==="no"){
+ html+=`<div class="result"><strong>Entered criteria meet the PPF definition.</strong><p>At least two of three domains are present within the preceding year, with no alternative explanation reported. Verify all measurements and clinical context.</p></div>`;
+}else if(ppfPeriod==="year"&&ppfDomains<2){
+ html+=`<p>Entered findings do not currently fulfil the two-of-three PPF criterion.</p>`;
+}else{
+ html+=`<p>PPF assessment is incomplete or the assessment period is outside the preceding 12 months.</p>`;
+}
+html+=`<p class="small">Physiological progression: absolute decline in FVC ≥5 percentage points predicted OR absolute decline in DLCO ≥10 percentage points predicted. Physiological thresholds require appropriate testing and exclusion of alternative explanations.</p>`;
+
+// Clinical safety reminder
+html+=`
+<hr>
+<h3>Mandatory clinical review</h3>
+<ul class="small">
+<li>Review the complete thin-section HRCT series and not only selected axial images.</li>
+<li>Distinguish true cysts from honeycombing, emphysema, bullae, cavities and pneumatoceles.</li>
+<li>Review inspiratory and expiratory images when small-airway disease or HP is suspected.</li>
+<li>Consider CTD, medication, occupational, environmental and familial causes.</li>
+<li>Separate radiological pattern from final multidisciplinary diagnosis.</li>
+<li>Consider multidisciplinary discussion where diagnosis remains uncertain.</li>
+</ul>
+<p><strong>Additional observations:</strong> ${escapeHTML(val("notes")||"None entered.")}</p>
+<div class="actions">
+<button class="secondary" onclick="window.print()">Print assessment</button>
+<button class="secondary" onclick="copyReport()">Copy assessment</button>
+</div>
+`;
+
+output.innerHTML=html;
+output.scrollIntoView({behavior:"smooth"});
+}
+
+function escapeHTML(text){
+return String(text).replace(/[&<>"']/g,function(c){
+return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+});
+}
+
+function copyReport(){
+const text=$("output").innerText;
+if(navigator.clipboard&&navigator.clipboard.writeText){
+navigator.clipboard.writeText(text)
+.then(()=>alert("Assessment copied."))
+.catch(()=>alert("Clipboard unavailable. Select and copy the text manually."));
+}else{
+alert("Clipboard unavailable. Select and copy the text manually.");
+}
+}
+
+function resetForm(){
+document.querySelectorAll("input,select,textarea").forEach(el=>{
+if(el.type==="checkbox")el.checked=false;
+else el.value="";
+});
+$("output").innerHTML="";
+$("output").classList.add("hidden");
+}
+</script>
+
+</body>
+</html>
